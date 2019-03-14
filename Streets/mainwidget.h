@@ -6,7 +6,11 @@
 #include <GL/glu.h>
 #include <iostream>
 #include <vector>
-#include "RGBVal.h"
+#include "structures.h"
+#include "DrawStreet.h"
+#include "Layout.h"
+#include "buildingblocks.h"
+#include "junction.h"
 
 using namespace std;
 
@@ -57,6 +61,11 @@ class MainWidget: public QGLWidget
         vector<vector<float>> edges = {};
         int count = 0;
         vector<vector<vector<vector<float>>>> offsetLines;
+        DrawStreet* street = new DrawStreet();
+        Layout *layout = new Layout(street);
+        BuildingBlocks* blocks;
+        Junction *junction;
+
 
 
 
