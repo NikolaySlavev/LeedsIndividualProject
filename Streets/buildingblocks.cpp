@@ -22,16 +22,58 @@ void BuildingBlocks::removeLargest() {
 }
 
 void BuildingBlocks::drawBlocks() {
-    for (int i=0; i < layout->objects.size(); i++) {
-        float red = (rand() % 100 + 50) / 256.0;
-        float green = (rand() % 100 + 50) / 256.0;
-        float blue = (rand() % 100 + 50) / 256.0;
-        glColor3f(red,green,blue);
+    GLUtesselator *tess = gluNewTess();
+    gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
+    gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
+    gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
+    gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
+
+
+    vector<point> dots;
+    vector<point> output;
+    vector<vector<point>> all_dots;
+    int s, m, e;
+    for (vector<int> object : layout->objects) {
+        for (int i=0; i < object.size(); i++) {
+            if (i == object.size() - 1) {
+                s = object[i];
+                e = object[0];
+            } else {
+                s = object[i];
+                e = object[i+1];
+            }
+            point start = layout->edges[s][e].offset_up.closest_p_intersection;
+            point control = layout->edges[s][e].offset_up.pair_p_intersection;
+            vector<int> p = layout->edges[s][e].offset_up.pair_id;
+            point end = layout->edges[p[1]][p[0]].offset_down.closest_p_intersection;
+            if (isnan(control.x))
+                output = {start, end};
+            else {
+                curved_edge_axis line = {toNode(start), {control}, toNode(end)};
+                output = street->drawQuadCurvedLine(toEdgeAxis(line));
+            }
+            dots.insert( dots.end(), output.begin(), output.end() );
+        }
+        all_dots.push_back(dots);
+        dots = {};
+    }
+
+
+    for (vector<point> dots: all_dots) {
+        int vec_size = dots.size();
+        GLdouble (*quad)[3] = new GLdouble[vec_size][3];
+        glColor3f(1,0,0);
         glNormal3f(0,1,0);
-        glBegin(GL_POLYGON);
-            for (int j=0; j < layout->objects[i].size(); j++)
-                glVertex3f( layout->nodes[layout->objects[i][j]].x, -1, layout->nodes[layout->objects[i][j]].z);
-        glEnd();
+        gluTessBeginPolygon(tess, nullptr);
+             gluTessBeginContour(tess);
+                for (int i=0; i<dots.size(); i++) {
+                    quad[i][0] = (double) dots[i].x;
+                    quad[i][1] = 0.5;
+                    quad[i][2] = (double) dots[i].z;
+                    gluTessVertex(tess, quad[i], quad[i]);
+                 }
+             gluTessEndContour(tess);
+        gluTessEndPolygon(tess);
     }
 }
 

@@ -1,8 +1,10 @@
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
+#include <Windows.h>
 #include <vector>
 #include <limits>
+#include <GL/glu.h>
 
 struct node {
     int id;
@@ -31,6 +33,7 @@ struct edge_offset {
     float pair_t_intersection = std::numeric_limits<double>::quiet_NaN();
     point pair_p_intersection;
     point closest_p_intersection;
+    float closest_t_intersection = std::numeric_limits<double>::quiet_NaN();
 };
 
 struct edge_axis {
@@ -51,5 +54,10 @@ struct curved_edge_axis {
 point toPoint(node input);
 node toNode(point input);
 edge_axis toEdgeAxis(curved_edge_axis input);
+void CALLBACK tessBeginCB(GLenum which);
+void CALLBACK tessEndCB();
+void CALLBACK tessErrorCB(GLenum errorCode);
+void CALLBACK tessVertexCB(const GLvoid *data);
+void CALLBACK tessVertexCB2(const GLvoid *data);
 
 #endif // STRUCTURES_H

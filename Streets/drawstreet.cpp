@@ -20,7 +20,7 @@ vector<point> DrawStreet::drawQuadCurvedLine(edge_axis street) {
         dot.z = pow(1-t, 2)*street.start.z + 2*(1-t)*t*street.control[0].z + t*t*street.end.z;
         dots.push_back(dot);
         //t += street.step_size;
-        t += 0.01;
+        t += 0.1;
         glVertex3f(dot.x, dot.y, dot.z);
     }
     glEnd();
@@ -104,15 +104,15 @@ edge_axis DrawStreet::computeStraightStreet(node start, node end) {
     return street;
 }
 
-void DrawStreet::drawStraightStreet(edge_axis street) {
-    float t = 0;
+void DrawStreet::drawStraightStreet(edge_axis street, float t_start, float t_end) {
+    float t = t_start;
     edge_offset offset_up = street.offset_up;
     edge_offset offset_down = street.offset_down;
     point up, down;
 
     glBegin(GL_TRIANGLE_STRIP);
     glNormal3f(0,1,0);
-    while ((1 - t) > -std::numeric_limits<double>::epsilon()) {
+    while ((t_end - t) > -std::numeric_limits<double>::epsilon()) {
         up = Lerp(offset_up.start, offset_up.end, t);
         down = Lerp(offset_down.start, offset_down.end, t);
         t += street.step_size;

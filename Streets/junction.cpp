@@ -8,58 +8,13 @@ Junction::Junction(Layout *layout, DrawStreet *street) {
     this->street = street;
 }
 
-
-void CALLBACK tessBeginCB(GLenum which);
-void CALLBACK tessEndCB();
-void CALLBACK tessErrorCB(GLenum errorCode);
-void CALLBACK tessVertexCB(const GLvoid *data);
-void CALLBACK tessVertexCB2(const GLvoid *data);
-//void CALLBACK tessCombineCB(const GLdouble newVertex[3], const GLdouble *neighborVertex[4],
-//                            const GLfloat neighborWeight[4], GLdouble **outData);
-
-
-void CALLBACK tessBeginCB(GLenum which) {
-    glBegin(which);
-}
-
-void CALLBACK tessEndCB() {
-    glEnd();
-}
-
-void CALLBACK tessVertexCB(const GLvoid *data) {
-    const GLdouble *ptr = (const GLdouble*)data;
-    glVertex3dv(ptr);
- }
-
-void CALLBACK tessVertexCB2(const GLvoid *data) {
-    const GLdouble *ptr = (const GLdouble*)data;
-    glColor3dv(ptr+3);
-    glVertex3dv(ptr);
-}
-
-void CALLBACK tessErrorCB(GLenum errorCode) {
-    const GLubyte *errorStr;
-    errorStr = gluErrorString(errorCode);
-    cerr << "[ERROR]: " << errorStr << endl;
-}
-
-
 void Junction::drawJunctions() {
     GLUtesselator *tess = gluNewTess();
-    GLdouble quad2[7][3] ={{-39, 0, -35}, {-41, 0, -35}, {-41, 0, -41}, {-35, 0, -41}, {-35, 0, -39}, {-39, 0, -39}, {-39, 0, -35}};
-
-
-
-//    {-39, 0, -35}, {-41, 0, -35},
-//    {-41, 0, -35}, {-41, 0, -41}, {-35, 0, -41}
-//    {-35, 0, -41}, {-35, 0, -39},
-//    {-35, 0, -39}, {-39, 0, -39}, {-39, 0, -35}
 
     gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
     gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
     gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
     gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
-
 
     vector<point> dots;
     vector<point> output;
@@ -93,24 +48,8 @@ void Junction::drawJunctions() {
                  }
              gluTessEndContour(tess);
         gluTessEndPolygon(tess);
-        //return;
     }
-
-
-
 }
-
-
-//void Junction::drawJunctions() {
-//    for (auto const& junction : junction_objects) {
-//        for (curved_edge_axis line: junction.second) {
-//            if (line.control.empty())
-//                street->drawStraightLine(toEdgeAxis(line));
-//            else
-//                street->drawQuadCurvedLine(toEdgeAxis(line));
-//        }
-//    }
-//}
 
 void Junction::addJunctionLine(int start, int end, vector<int> target_id) {
     curved_edge_axis straight;
@@ -149,6 +88,7 @@ void Junction::addClosestIntersection(float closest_t, edge_offset *offset) {
                        (1-closest_t)*offset->start.y + closest_t*offset->end.y,
                        (1-closest_t)*offset->start.z + closest_t*offset->end.z};
     offset->closest_p_intersection = closest_p;
+    offset->closest_t_intersection = closest_t;
 }
 
 void Junction::findClosestIntersections() {
@@ -219,7 +159,6 @@ vector<float> Junction::findIntersection(edge_offset e1, edge_offset e2) {
 }
 
 void Junction::assignPair(edge_offset *offset, float t, point p) {
-    //offset->pair_id = offset_edge_id;
     offset->pair_t_intersection = t;
     offset->pair_p_intersection = p;
 }

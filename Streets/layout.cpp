@@ -46,7 +46,6 @@ void Layout::gridCurved(int start, int size, int increment) {
             addNode(new_node);
         }
     }
-    //initEdgeStorage();
     graphVector line_vector;
     float line_length;
     vector<graphVector> normals;

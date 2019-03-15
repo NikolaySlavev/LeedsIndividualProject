@@ -9,7 +9,7 @@
 class DrawStreet {
 public:
     DrawStreet();
-    void drawStraightStreet(edge_axis street);
+    void drawStraightStreet(edge_axis street, float t_start = 0, float t_end = 1);
     edge_axis computeStraightStreet(node start, node end);
     graphVector findVector(point s, point e);
     float findLength(graphVector line_vector);
