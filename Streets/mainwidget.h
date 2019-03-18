@@ -19,19 +19,25 @@ class MainWidget: public QGLWidget
 
     public:
         MainWidget(QWidget *parent);
-        void DrawLine(float s_x, float s_y, float s_z, float e_x, float e_y, float e_z);
         void OffsetLine(vector<float> s, vector<float> e);
         void DrawCurve(vector<float> p0, vector<float> p1, vector<float> p2, vector<float> p3);
         vector<float> Lerp(vector<float> p0, vector<float> p1, float t);
         void addEdge(int u, vector<int> v);
         void gridStreets(int start, int size, int increment);
         void radialStreets();
-        void findBlocks();
-        void DFS(int v, bool visited[]);
         void drawBlocks();
         void removeBlocks();
         void findBlocks_test();
-        void DFS_test(int v, vector<vector<bool>> visited_edges);
+        void DFS_test(int v, vector<vector<bool>> visited_edges, vector<int> found);
+        float findIntersection(vector<float> s1, vector<float> e1, vector<float> s2, vector<float> e2);
+        vector<vector<float>> calcOffsetLine(vector<float> s, vector<float> e);
+        void addNode(vector<float> location);
+        void addOffset(vector<int> edge_index, vector<vector<float>> offset);
+        void initAdj();
+        void initOffset();
+        void findJunction(int node_index);
+        float compareIntersection(vector<float> line1_s, vector<float> line1_e, vector<float> line2_s, vector<float> line2_e, float smallest);
+
 
 
     protected:
@@ -50,6 +56,7 @@ class MainWidget: public QGLWidget
         vector<vector<int>> objects = {};
         vector<vector<float>> edges = {};
         int count = 0;
+        vector<vector<vector<vector<float>>>> offsetLines;
 
 
 
