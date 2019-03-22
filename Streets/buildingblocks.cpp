@@ -21,16 +21,10 @@ void BuildingBlocks::removeLargest() {
     layout->objects.erase(layout->objects.begin() + index);
 }
 
-void BuildingBlocks::drawBlocks() {
-    GLUtesselator *tess = gluNewTess();
-    gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
-    gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
-    gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
-    gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
-
-
+void BuildingBlocks::computeDrawableBlocks() {
     vector<point> dots;
     vector<point> output;
+    vector<point> edge_nodes;
     vector<vector<point>> all_dots;
     int s, m, e;
     for (vector<int> object : layout->objects) {
@@ -46,6 +40,15 @@ void BuildingBlocks::drawBlocks() {
             point control = layout->edges[s][e].offset_up.pair_p_intersection;
             vector<int> p = layout->edges[s][e].offset_up.pair_id;
             point end = layout->edges[p[1]][p[0]].offset_down.closest_p_intersection;
+
+            edge_nodes = layout->edges[s][e].offset_up.dots;
+
+            if (!edge_nodes.empty()) {
+                int end_dot = layout->edges[s][e].offset_up.closest_i_intersection;
+                int start_dot = (edge_nodes.size()-2) - layout->edges[e][s].offset_down.closest_i_intersection;
+                dots.insert( dots.end(), edge_nodes.begin()+start_dot+1, edge_nodes.begin()+end_dot+1);
+            }
+
             if (isnan(control.x))
                 output = {start, end};
             else {
@@ -54,15 +57,34 @@ void BuildingBlocks::drawBlocks() {
             }
             dots.insert( dots.end(), output.begin(), output.end() );
         }
-        all_dots.push_back(dots);
+        layout->objects_p.push_back(dots);
         dots = {};
     }
+}
 
+void BuildingBlocks::drawBlocks() {
+    GLUtesselator *tess = gluNewTess();
+    gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
+    gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
+    gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
+    gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
 
-    for (vector<point> dots: all_dots) {
+    for (vector<point> dots: layout->objects_p) {
+
+//        for (int i=0; i<dots.size(); i++) {
+//            glPointSize(4);
+//            glBegin(GL_POINTS);
+//                 glVertex3f(dots[i].x, 3, dots[i].z);
+//            glEnd();
+//        }
+
         int vec_size = dots.size();
         GLdouble (*quad)[3] = new GLdouble[vec_size][3];
-        glColor3f(1,0,0);
+        float red = (rand() % 100 + 50) / 256.0;
+        float green = (rand() % 100 + 50) / 256.0;
+        float blue = (rand() % 100 + 50) / 256.0;
+        glColor3f(red,green,blue);
+        //glColor3f(1,0,0);
         glNormal3f(0,1,0);
         gluTessBeginPolygon(tess, nullptr);
              gluTessBeginContour(tess);

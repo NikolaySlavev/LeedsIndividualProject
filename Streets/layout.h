@@ -20,6 +20,7 @@ public:
     std::map<int, std::map<int, edge_axis>> edges;
     int count_node_id = 0;
     std::vector<std::vector<int>> objects = {};
+    std::vector<std::vector<point>> objects_p = {};
 
 private:
     void initEdgeStorage();

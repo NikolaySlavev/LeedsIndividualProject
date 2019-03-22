@@ -84,29 +84,51 @@ void Junction::findJunctionObjects() {
 }
 
 void Junction::addClosestIntersection(float closest_t, edge_offset *offset) {
-    point closest_p = {(1-closest_t)*offset->start.x + closest_t*offset->end.x,
-                       (1-closest_t)*offset->start.y + closest_t*offset->end.y,
-                       (1-closest_t)*offset->start.z + closest_t*offset->end.z};
+    // Dodgy CODE with the indexing!!!
+    point start = offset->start;
+    point end = offset->end;
+    if (!offset->dots.empty()) {
+        int closest_i = (int) closest_t;
+        start = offset->dots[closest_i];
+        end = offset->dots[closest_i+1];
+        closest_t -= closest_i;
+        offset->closest_i_intersection = closest_i;
+    }
+
+    point closest_p = {(1-closest_t)*start.x + closest_t*end.x,
+                       (1-closest_t)*start.y + closest_t*end.y,
+                       (1-closest_t)*start.z + closest_t*end.z};
     offset->closest_p_intersection = closest_p;
     offset->closest_t_intersection = closest_t;
 }
 
 void Junction::findClosestIntersections() {
-    float closest_t;
+    float closest_t = NAN;
     for (auto const& edges : layout->edges) {
         for (auto const& edge : edges.second) {
             edge_offset offset_up = edge.second.offset_up;
             edge_offset offset_down = edge.second.offset_down;
+
             if (isnan(offset_down.pair_t_intersection) && isnan(offset_up.pair_t_intersection))
-                cout << "LOL" << endl;
-            if (isnan(offset_down.pair_t_intersection))
-                closest_t = offset_up.pair_t_intersection - 0.2f;
-            else if (isnan(offset_up.pair_t_intersection))
-                closest_t = offset_down.pair_t_intersection - 0.2f;
-            else if (offset_down.pair_t_intersection < offset_up.pair_t_intersection)
-                closest_t = offset_down.pair_t_intersection - 0.2f;
-            else if (offset_up.pair_t_intersection <= offset_down.pair_t_intersection)
-                closest_t = offset_up.pair_t_intersection - 0.2f;
+                continue;
+            else if (isnan(offset_down.pair_t_intersection) ||
+                    offset_up.pair_t_index < offset_down.pair_t_index ||
+                    (offset_down.pair_t_index == offset_up.pair_t_index &&
+                    offset_up.pair_t_intersection < offset_down.pair_t_intersection)) {
+                closest_t = (offset_up.pair_t_index + offset_up.pair_t_intersection) * 0.9;
+                if (offset_up.pair_t_intersection < 0) {
+                    closest_t = (offset_up.dots.size() - offset_up.pair_t_intersection) * 0.1;
+                }
+            } else if (isnan(offset_up.pair_t_intersection) ||
+                      offset_down.pair_t_index < offset_up.pair_t_index ||
+                      (offset_down.pair_t_index == offset_up.pair_t_index &&
+                       offset_down.pair_t_intersection <= offset_up.pair_t_intersection)) {
+                closest_t = (offset_down.pair_t_index + offset_down.pair_t_intersection) * 0.9;
+                if (offset_down.pair_t_intersection < 0) {
+                    closest_t = (offset_up.dots.size() - offset_up.pair_t_intersection) * 0.1;
+                }
+            }
+
             addClosestIntersection(closest_t, &layout->edges[edge.second.start.id][edge.second.end.id].offset_up);
             addClosestIntersection(closest_t, &layout->edges[edge.second.start.id][edge.second.end.id].offset_down);
         }
@@ -140,25 +162,75 @@ void Junction::addPair(int start, int mid,  int end) {
     vector<float> intersection = findIntersection(edge1, edge2);
     float t = intersection[0];
     float u = intersection[1];
+    int index_t = (int) intersection[2];
+    int index_u = (int) intersection[3];
+    if (edge2.dots.size() != 0)
+        index_u = (edge2.dots.size()-2) - index_u;
+
     edge_offset *offset_up = &layout->edges[start][mid].offset_up;
     edge_offset *offset_down = &layout->edges[end][mid].offset_down;
     offset_up->pair_id = edge2.id;
     offset_down->pair_id = edge1.id;
 
     if (!isinf(t) && !isnan(t)) {
-        point p = {(1 - t) * edge1.start.x + t * edge1.end.x, 0 , (1 - t) * edge1.start.z + t * edge1.end.z};
-        assignPair(offset_up, t, p);
-        assignPair(offset_down, 1-u, p);
+        point p;
+        if (index_t == 0)
+            p = {(1 - t) * edge1.start.x + t * edge1.end.x, 0 , (1 - t) * edge1.start.z + t * edge1.end.z};
+        else
+            p = {(1-t) * edge1.dots[index_t].x + t * edge1.dots[index_t+1].x, 0, (1-t) * edge1.dots[index_t].z + t * edge1.dots[index_t+1].z};
+        assignPair(offset_up, t, p, index_t);
+        assignPair(offset_down, 1-u, p, index_u);
     }
 }
 
 vector<float> Junction::findIntersection(edge_offset e1, edge_offset e2) {
-    float t = ((e1.start.x - e2.start.x) * (e2.start.z - e2.end.z) - (e1.start.z - e2.start.z) * (e2.start.x - e2.end.x)) / ((e1.start.x - e1.end.x) * (e2.start.z - e2.end.z) - (e1.start.z - e1.end.z)*(e2.start.x - e2.end.x));
-    float u = -(((e1.start.x - e1.end.x) * (e1.start.z - e2.start.z) - (e1.start.z - e1.end.z) * (e1.start.x - e2.start.x)) / ((e1.start.x - e1.end.x) * (e2.start.z - e2.end.z) - (e1.start.z - e1.end.z)*(e2.start.x - e2.end.x)));
+    vector<float> t_u;
+    if (e1.dots.empty() && e2.dots.empty()) {
+         t_u = algorithmIntersection(e1.start, e1.end, e2.start, e2.end);
+         t_u.push_back(0);
+         t_u.push_back(0);
+    } else {
+        vector<point> e1_dots = e1.dots;
+        vector<point> e2_dots = e2.dots;
+        if (e1.dots.empty())
+            e1_dots = {e1.start, e1.end};
+        if (e2.dots.empty())
+            e2_dots = {e2.start, e2.end};
+        t_u = findCurvedIntersection(e1_dots, e2_dots);
+    }
+    return t_u;
+}
+
+vector<float> Junction::findCurvedIntersection(vector<point> e1, vector<point> e2) {
+    vector<float> best = {numeric_limits<float>::infinity(), numeric_limits<float>::infinity()};
+    vector<int> best_index = {-1, -1};
+    vector<float> t_u;
+
+    for (int i=0; i < e1.size()-1; i++) {
+        for (int j=0; j < e2.size()-1; j++) {
+            t_u = algorithmIntersection(e1[i], e1[i+1], e2[j], e2[j+1]);
+            if (t_u[0] >= 0 && t_u[0] <= 1 && t_u[1] >=0 && t_u[1] <= 1) {
+                best = {t_u[0], t_u[1]};
+                best_index = {i,j};
+                return {best[0], best[1], static_cast<float>(best_index[0]), static_cast<float>(best_index[1])};
+            }
+        }
+    }
+
+    t_u = algorithmIntersection(e1[e1.size()-2], e1[e1.size()-1], e2[0], e2[1]);
+    best = {t_u[0], t_u[1]};
+    best_index = {static_cast<int>(e1.size()-2), 0};
+    return {best[0], best[1], static_cast<float>(best_index[0]), static_cast<float>(best_index[1])};
+}
+
+vector<float> Junction::algorithmIntersection(point e1_start, point e1_end, point e2_start, point e2_end) {
+    float t = ((e1_start.x - e2_start.x) * (e2_start.z - e2_end.z) - (e1_start.z - e2_start.z) * (e2_start.x - e2_end.x)) / ((e1_start.x - e1_end.x) * (e2_start.z - e2_end.z) - (e1_start.z - e1_end.z)*(e2_start.x - e2_end.x));
+    float u = -(((e1_start.x - e1_end.x) * (e1_start.z - e2_start.z) - (e1_start.z - e1_end.z) * (e1_start.x - e2_start.x)) / ((e1_start.x - e1_end.x) * (e2_start.z - e2_end.z) - (e1_start.z - e1_end.z)*(e2_start.x - e2_end.x)));
     return {t, u};
 }
 
-void Junction::assignPair(edge_offset *offset, float t, point p) {
+void Junction::assignPair(edge_offset *offset, float t, point p, int index) {
     offset->pair_t_intersection = t;
     offset->pair_p_intersection = p;
+    offset->pair_t_index = index;
 }

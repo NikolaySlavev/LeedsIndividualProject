@@ -12,18 +12,18 @@ vector<point> DrawStreet::drawQuadCurvedLine(edge_axis street) {
 
     vector<point> dots;
 
-    glBegin(GL_POINTS);
-    glPointSize(1);
+    //glBegin(GL_POINTS);
+    //glPointSize(1);
     while ((1 - t) > -std::numeric_limits<double>::epsilon()) {
         dot.x = pow(1-t, 2)*street.start.x + 2*(1-t)*t*street.control[0].x + t*t*street.end.x;
-        dot.y = 0.5;
+        dot.y = 0;
         dot.z = pow(1-t, 2)*street.start.z + 2*(1-t)*t*street.control[0].z + t*t*street.end.z;
         dots.push_back(dot);
         //t += street.step_size;
         t += 0.1;
-        glVertex3f(dot.x, dot.y, dot.z);
+        //glVertex3f(dot.x, dot.y, dot.z);
     }
-    glEnd();
+    //glEnd();
 
     return dots;
 }
@@ -45,14 +45,14 @@ void DrawStreet::drawStraightLine(edge_axis street) {
     glEnd();
 }
 
-void DrawStreet::drawCurvedStreet(edge_axis street) {
+edge_axis DrawStreet::computeCurvedStreet(node start, node end, vector<point> control) {
     float t = 0, line_length;
     point a, b, c, d, e, f, up_f, down_f;
     graphVector line_vector;
     vector<graphVector> normals;
+    edge_axis street = computeStraightStreet(start, end);
+    street.control = control;
 
-    glBegin(GL_TRIANGLE_STRIP);
-    glNormal3f(0,1,0);
     while ((1 - t) > -std::numeric_limits<double>::epsilon()) {
         a = Lerp(toPoint(street.start), street.control[0], t);
         b = Lerp(street.control[0], street.control[1], t);
@@ -61,7 +61,7 @@ void DrawStreet::drawCurvedStreet(edge_axis street) {
         e = Lerp(b,c,t);
         f = Lerp(d,e,t);
 
-        line_vector = findVector(e, d);
+        line_vector = findVector(d, e);
         line_length = findLength(line_vector);
         normals = findNormals(line_vector, line_length);
 
@@ -69,9 +69,28 @@ void DrawStreet::drawCurvedStreet(edge_axis street) {
         down_f = {f.x + normals[1].x, f.y + normals[1].y, f.z + normals[1].z};;
 
         t += 0.01;
+
+        street.offset_up.dots.push_back(up_f);
+        street.offset_down.dots.push_back(down_f);
+    }
+    return street;
+}
+
+void DrawStreet::drawCurvedStreet(edge_axis street, vector<point> p_start, vector<point> p_end, int i_start, int i_end) {
+    point up_f, down_f;
+
+    glBegin(GL_TRIANGLE_STRIP);
+    glNormal3f(0,1,0);
+    glVertex3f(p_start[0].x, p_start[0].y, p_start[0].z);
+    glVertex3f(p_start[1].x, p_start[1].y, p_start[1].z);
+    for (int i = i_start; i <= i_end; i++) {
+        up_f = street.offset_up.dots[i];
+        down_f = street.offset_down.dots[i];
         glVertex3f(up_f.x, up_f.y, up_f.z);
         glVertex3f(down_f.x, down_f.y, down_f.z);
     }
+    glVertex3f(p_end[0].x, p_end[0].y, p_end[0].z);
+    glVertex3f(p_end[1].x, p_end[1].y, p_end[1].z);
     glEnd();
 }
 
@@ -86,6 +105,12 @@ edge_axis DrawStreet::computeStraightStreet(node start, node end) {
     graphVector line_vector = findVector(toPoint(start), toPoint(end));
     float line_length =  findLength(line_vector);
     vector<graphVector> normals = findNormals(line_vector, line_length);
+    float width = 1.5;
+    //float width = rand() % 100;
+    //width = (width + 50) / 100;
+    normals[0] = {normals[0].x*width, normals[0].y*width, normals[0].z*width};
+    normals[1] = {normals[1].x*width, normals[1].y*width, normals[1].z*width};
+
     street.step_size = 1 / (line_length * 10);
 
     street.start = start;

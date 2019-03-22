@@ -11,6 +11,8 @@
 #include "Layout.h"
 #include "buildingblocks.h"
 #include "junction.h"
+#include "buildings.h"
+#include "blocksubdivision.h"
 
 using namespace std;
 
@@ -42,8 +44,6 @@ class MainWidget: public QGLWidget
         void findJunction(int node_index);
         float compareIntersection(vector<float> line1_s, vector<float> line1_e, vector<float> line2_s, vector<float> line2_e, float smallest);
 
-
-
     protected:
         void initializeGL();
         void resizeGL(int w, int h);
@@ -65,10 +65,8 @@ class MainWidget: public QGLWidget
         Layout *layout = new Layout(street);
         BuildingBlocks* blocks;
         Junction *junction;
-
-
-
-
+        Buildings *buildings;
+        BlockSubdivision *subdivision;;
 
 
 }; // class
