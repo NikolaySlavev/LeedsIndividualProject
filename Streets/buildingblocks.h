@@ -11,8 +11,8 @@
 #include <algorithm>
 #include "junction.h"
 
-class BuildingBlocks {
 
+class BuildingBlocks {
     public:
         BuildingBlocks(Layout *layout, DrawStreet *street, Junction *junction);
         void findBlocks();
@@ -20,7 +20,7 @@ class BuildingBlocks {
         void drawBlocks();
         void addPair(edge_offset edge, int edge_id, float t);
         void removeLargest();
-
+        void computeDrawableBlocks();
     private:
         void search(int v, std::map<int, std::map<int, bool>> visited_edges, std::vector<int> found);
         std::vector<int> stack;
@@ -30,5 +30,7 @@ class BuildingBlocks {
         std::vector<std::vector<bool>> visited_edges;
         std::vector<int> object_nodes = {};
 };
+
+
 
 #endif // BUILDINGBLOCKS_H

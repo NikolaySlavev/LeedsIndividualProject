@@ -7,6 +7,7 @@ CONFIG += c++11
 
 
 QT += widgets opengl gui
+INCLUDEPATH += ./../../../readosm-1.1.0/expat_h_libs
 LIBS += -lGLU32 -lOpenGL32
 
 SOURCES += \
@@ -19,7 +20,10 @@ SOURCES += \
     drawstreet.cpp \
     layout.cpp \
     buildingblocks.cpp \
-    junction.cpp
+    junction.cpp \
+    buildings.cpp \
+    blocksubdivision.cpp \
+    parseinput.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -30,8 +34,10 @@ HEADERS += \
     layout.h \
     structures.h \
     buildingblocks.h \
-    junction.h
+    junction.h \
+    buildings.h \
+    blocksubdivision.h \
+    parseinput.h
 
 FORMS += \
         mainwindow.ui
-

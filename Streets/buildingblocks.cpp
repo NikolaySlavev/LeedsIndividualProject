@@ -21,16 +21,10 @@ void BuildingBlocks::removeLargest() {
     layout->objects.erase(layout->objects.begin() + index);
 }
 
-void BuildingBlocks::drawBlocks() {
-    GLUtesselator *tess = gluNewTess();
-    gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
-    gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
-    gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
-    gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
-
-
+void BuildingBlocks::computeDrawableBlocks() {
     vector<point> dots;
     vector<point> output;
+    vector<point> edge_nodes;
     vector<vector<point>> all_dots;
     int s, m, e;
     for (vector<int> object : layout->objects) {
@@ -43,9 +37,22 @@ void BuildingBlocks::drawBlocks() {
                 e = object[i+1];
             }
             point start = layout->edges[s][e].offset_up.closest_p_intersection;
+            if (isnan(layout->edges[s][e].offset_up.closest_t_intersection))
+                start = layout->edges[s][e].offset_up.end;
             point control = layout->edges[s][e].offset_up.pair_p_intersection;
             vector<int> p = layout->edges[s][e].offset_up.pair_id;
             point end = layout->edges[p[1]][p[0]].offset_down.closest_p_intersection;
+            if (isnan(layout->edges[p[1]][p[0]].offset_down.closest_t_intersection))
+                end = layout->edges[p[1]][p[0]].offset_down.end;
+
+            edge_nodes = layout->edges[s][e].offset_up.dots;
+
+            if (!edge_nodes.empty()) {
+                int end_dot = layout->edges[s][e].offset_up.closest_i_intersection;
+                int start_dot = (edge_nodes.size()-2) - layout->edges[e][s].offset_down.closest_i_intersection;
+                dots.insert( dots.end(), edge_nodes.begin()+start_dot+1, edge_nodes.begin()+end_dot+1);
+            }
+
             if (isnan(control.x))
                 output = {start, end};
             else {
@@ -54,16 +61,36 @@ void BuildingBlocks::drawBlocks() {
             }
             dots.insert( dots.end(), output.begin(), output.end() );
         }
-        all_dots.push_back(dots);
+        layout->objects_p.push_back(dots);
         dots = {};
     }
+}
 
+void BuildingBlocks::drawBlocks() {
+    GLUtesselator *tess = gluNewTess();
+    gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
+    gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
+    gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
+    gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
 
-    for (vector<point> dots: all_dots) {
+    cout << "SIZEEE:: " << layout->objects_p.size() << endl;
+    for (vector<point> dots: layout->objects_p) {
+
+//        for (int i=0; i<dots.size(); i++) {
+//            glPointSize(4);
+//            glBegin(GL_POINTS);
+//                 glVertex3f(dots[i].x, 3, dots[i].z);
+//            glEnd();
+//        }
+
         int vec_size = dots.size();
         GLdouble (*quad)[3] = new GLdouble[vec_size][3];
+        float red = (rand() % 100 + 50) / 256.0;
+        float green = (rand() % 100 + 50) / 256.0;
+        float blue = (rand() % 100 + 50) / 256.0;
+        glColor3f(red,green,blue);
         glColor3f(1,0,0);
-        glNormal3f(0,1,0);
+        //glNormal3f(0,1,0);
         gluTessBeginPolygon(tess, nullptr);
              gluTessBeginContour(tess);
                 for (int i=0; i<dots.size(); i++) {
@@ -98,17 +125,33 @@ void BuildingBlocks::findBlocks() {
     for (int i = 0; i < layout->edges.size(); i++) {
         for (auto const& edge : layout->edges[i]) {
             visited_edges[edge.second.start.id][edge.second.end.id] = false;
-            if (!set_first) {
-                visited_edges[edge.second.start.id][edge.second.end.id] = true;
-                set_first = true;
-                search_from = edge.second.end.id;
-            }
         }
     }
 
-    stack = {0};
-    vector<int> found = {-1, 0};
-
+    float smallest_x = numeric_limits<float>::infinity(), smallest_z = numeric_limits<float>::infinity();
+    int smallest_id = 0;
+    for (int i=0; i < layout->nodes.size(); i++) {
+        if (layout->nodes[i].x < smallest_x) {
+            smallest_x = layout->nodes[i].x;
+            if (layout->nodes[i].z < smallest_z) {
+                smallest_z = layout->nodes[i].z;
+                smallest_id = layout->nodes[i].id;
+            }
+        }
+    }
+    graphVector vec, adj_vec;
+    float angle, smallest_angle = 361;
+    for (auto const& edge : layout->edges[smallest_id]) {
+        adj_vec = street->findVector(toPoint(layout->edges[smallest_id][edge.first].end), toPoint(layout->edges[smallest_id][edge.first].start));
+        angle = findAngle(vec, adj_vec);
+        if (angle < smallest_angle) {
+            smallest_angle = angle;
+            search_from = edge.first;
+        }
+    }
+    visited_edges[smallest_id][search_from] = true;
+    stack = {smallest_id};
+    vector<int> found = {-1, smallest_id};
     search(search_from, visited_edges, found);
 }
 
