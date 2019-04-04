@@ -11,8 +11,8 @@
 #include <algorithm>
 #include "junction.h"
 
-class BuildingBlocks {
 
+class BuildingBlocks {
     public:
         BuildingBlocks(Layout *layout, DrawStreet *street, Junction *junction);
         void findBlocks();
@@ -30,5 +30,7 @@ class BuildingBlocks {
         std::vector<std::vector<bool>> visited_edges;
         std::vector<int> object_nodes = {};
 };
+
+
 
 #endif // BUILDINGBLOCKS_H

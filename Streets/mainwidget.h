@@ -13,6 +13,7 @@
 #include "junction.h"
 #include "buildings.h"
 #include "blocksubdivision.h"
+#include <fstream>
 
 using namespace std;
 
@@ -22,6 +23,10 @@ class MainWidget: public QGLWidget
     public slots:
         void cameraRotateHor(int);
         void cameraRotateVer(int);
+        void enableBuildings();
+        void moveXNode(int);
+        void moveZNode(int);
+        void changeMoveNode(QString);
 
     public:
         MainWidget(QWidget *parent);
@@ -43,11 +48,14 @@ class MainWidget: public QGLWidget
         void initOffset();
         void findJunction(int node_index);
         float compareIntersection(vector<float> line1_s, vector<float> line1_e, vector<float> line2_s, vector<float> line2_e, float smallest);
+        void updateMove();
 
     protected:
         void initializeGL();
         void resizeGL(int w, int h);
         void paintGL();
+        void keyPressEvent(QKeyEvent *keyEvent);
+
 
     private:
         int horVal = 0;
@@ -61,13 +69,19 @@ class MainWidget: public QGLWidget
         vector<vector<float>> edges = {};
         int count = 0;
         vector<vector<vector<vector<float>>>> offsetLines;
-        DrawStreet* street = new DrawStreet();
+        DrawStreet* street;
         Layout *layout = new Layout(street);
         BuildingBlocks* blocks;
         Junction *junction;
         Buildings *buildings;
-        BlockSubdivision *subdivision;;
-
+        BlockSubdivision *subdivision;
+        bool enable_buildings = true;
+        float lx=0.0f,lz=-1.0f;
+        float x=0.0f,z=5.0f;
+        float angle = 0.0;
+        int prev_Xvalue = 0;
+        int prev_Zvalue = 0;
+        int move_node = 0;
 
 }; // class
 

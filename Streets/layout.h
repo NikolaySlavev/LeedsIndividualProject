@@ -15,6 +15,7 @@ public:
     void gridStraight(int start, int size, int increment);
     void gridCurved(int start, int size, int increment);
     void inputLayout(std::vector<std::vector<node>> nodePairs);
+    void fileLayout(std::string filename);
 
     std::map<int, node> nodes;
     std::map<int, std::map<int, edge_axis>> edges;

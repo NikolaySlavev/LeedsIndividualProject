@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include "structures.h"
 #include <GL/glu.h>
-
+#include <fstream>
 
 class DrawStreet {
 public:

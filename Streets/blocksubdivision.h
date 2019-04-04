@@ -31,6 +31,7 @@ private:
     int Dot(graphVector vec1, graphVector vec2);
     float pointDistance(graphVector n, point a, point p);
     std::vector<std::vector<point>> subdivision(std::vector<point> concave_p);
+    float convexArea(std::vector<point> convex);
 };
 
 #endif // BLOCKSUBDIVISION_H

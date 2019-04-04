@@ -57,6 +57,7 @@ void BlockSubdivision::drawSmallestRectangle() {
             glColor3f(0,0,0);
             glVertex3f(c0.x, 6, c0.z);
             glVertex3f(c1.x, 6, c1.z);
+            //cout <<"OPOPOPOP " << c0.x << " " << c0.z << " " << c1.x << " " << c1.z << endl;
             glColor3f(1,0,1);
             glVertex3f(c2.x, 6, c2.z);
         }
@@ -86,8 +87,9 @@ void BlockSubdivision::drawSmallestRectangle() {
 
 vector<vector<point>> BlockSubdivision::allSubdivision(vector<vector<point>> objects_p) {
     vector<vector<point>> output = {}, divided = {};
-    for (vector<point> object_p: objects_p) {
-        divided = subdivision(object_p);
+    for (int i=0; i<objects_p.size(); i++) {
+    //for (vector<point> object_p: objects_p) {
+        divided = subdivision(objects_p[i]);
         output.insert(output.end(), divided.begin(), divided.end());
     }
     //return divided;
@@ -97,12 +99,14 @@ vector<vector<point>> BlockSubdivision::allSubdivision(vector<vector<point>> obj
 vector<vector<point>> BlockSubdivision::subdivision(vector<point> concave_p) {
     vector<point> convex_p = convexHull(concave_p);
     rectangle bounding_box = smallestRectangle(convex_p);
+    if (bounding_box.area < 30 || isinf(bounding_box.area)){
+        return {concave_p};
+    }
     vector<vector<point>> all_objects, objects, output;
     vector<vector<point>> divided_rects = divideRect(bounding_box, concave_p);
+    if (divided_rects.empty())
+        return {concave_p};
 
-    if (bounding_box.area < 50){
-        return divided_rects;
-    }
     objects = subdivision(divided_rects[0]);
     all_objects.insert(all_objects.end(), objects.begin(), objects.end());
     objects = subdivision(divided_rects[1]);
@@ -125,31 +129,35 @@ vector<vector<point>> BlockSubdivision::divideRect(rectangle rect, vector<point>
     if (-rect.leftmost + rect.rightmost >= rect.upmost) {
         largest_dist = (rect.leftmost + rect.rightmost)/2;
         line[0] = {rect.origin.x + rect.U[0].x*largest_dist, 0, rect.origin.z + rect.U[0].z*largest_dist};
-        line[1] = {line[0].x + rect.U[1].x*(rect.upmost+1), 0, line[0].z + rect.U[1].z*(rect.upmost+1)};
-        line[0] = {line[0].x + Perp(Perp(rect.U[1])).x, 0, line[0].z + Perp(Perp(rect.U[1])).z};
+        line[1] = {line[0].x + rect.U[1].x*(rect.upmost)*2, 0, line[0].z + rect.U[1].z*(rect.upmost)*2};
+        line[0] = {line[0].x + Perp(Perp(rect.U[1])).x*100, 0, line[0].z + Perp(Perp(rect.U[1])).z*100};
     } else {
         largest_dist = rect.upmost/2;
         line[0] = {rect.nodes[0].x + rect.U[1].x*largest_dist, 0, rect.nodes[0].z + rect.U[1].z*largest_dist};
-        line[0] = {line[0].x + Perp(Perp(rect.U[0])).x, 0, line[0].z + Perp(Perp(rect.U[0])).z};
+        line[0] = {line[0].x + Perp(Perp(rect.U[0])).x*100, 0, line[0].z + Perp(Perp(rect.U[0])).z*100};
         line[1] = {rect.nodes[1].x + rect.U[1].x*largest_dist, 0, rect.nodes[1].z + rect.U[1].z*largest_dist};
-        line[1] = {line[1].x + rect.U[0].x, 0, line[1].z + rect.U[0].z};
+        line[1] = {line[1].x + rect.U[0].x*100, 0, line[1].z + rect.U[0].z*100};
     }
 
     e1.dots = {line[0], line[1]};
-    for (int i=0; i<3; i++) {
+    for (int i=0; i<2; i++) {
         e2.dots = {};
         e2.dots.insert(e2.dots.end(), dots.begin()+next, dots.end());
         if (next!=0)
             e2.dots.push_back(dots[0]);
-        if (i == 2) {
-            if (e2.dots.size() == 1)
-                break;
-            t_u = junction->findIntersection(e1, e2);
-            if (t_u[1] > 0 && t_u[1] < 1)
-                inter_i = {};
-            break;
-        }
+//        if (i == 2) {
+//            if (e2.dots.size() == 1)
+//                break;
+//            t_u = junction->findIntersection(e1, e2);
+//            if (t_u[1] > 0 && t_u[1] < 1)
+//                inter_i = {};
+//            break;
+//        }
         t_u = junction->findIntersection(e1, e2);
+        if (isnan(t_u[0]) || isnan(t_u[1])) {
+            cerr << "[Error] Cannot find subdivision intersection" << endl;
+            return {};
+        }
         p = {(1-t_u[0])*e1.dots[0].x + t_u[0]*e1.dots[1].x, 0, (1-t_u[0])*e1.dots[0].z + t_u[0]*e1.dots[1].z};
         inter_p.push_back(p);
         inter_i.push_back(t_u[3]+next);
@@ -193,11 +201,22 @@ void BlockSubdivision::findSmallestRectangles() {
     }
 }
 
+float BlockSubdivision::convexArea(vector<point> convex) {
+    float area = 0;
+    int j = convex.size() - 1;
+    for (int i = 0; i < convex.size(); i++) {
+        area += (convex[j].x + convex[i].x) * (convex[j].z - convex[i].z);
+        j = i;
+    }
+    return fabs(area/2);
+}
+
 rectangle BlockSubdivision::smallestRectangle(vector<point> convex) {
     rectangle rect, best_rect;
     int v1, v2;
     float distance, rev_distance, largest_dist, largest_rev_dist, smallest_rev_dist;
     best_rect.area = numeric_limits<float>::infinity();
+    float convex_area = convexArea(convex);
     for (int i=0; i<convex.size(); i++) {
         v2 = i+1;
         v1 = i;
@@ -229,7 +248,9 @@ rectangle BlockSubdivision::smallestRectangle(vector<point> convex) {
             }
         }
         rect.area = (largest_rev_dist - smallest_rev_dist) * largest_dist;
-        if (rect.area < best_rect.area) {
+
+
+        if (rect.area < best_rect.area && rect.area >= convex_area) {
             best_rect= rect;
             best_rect.leftmost = smallest_rev_dist;
             best_rect.rightmost = largest_rev_dist;
@@ -286,8 +307,11 @@ vector<point> BlockSubdivision::convexHull(vector<point> points) {
    S.push_back(points[2]);
 
    for (int i = 3; i < m; i++) {
-      while (orientation(nextToTop(S), S[S.size()-1], points[i]) != 2)
+      while (orientation(nextToTop(S), S[S.size()-1], points[i]) != 2) {
          S.pop_back();
+         if (S.size() == 1)
+             return S;
+      }
       S.push_back(points[i]);
    }
    convex_hulls.push_back(S);

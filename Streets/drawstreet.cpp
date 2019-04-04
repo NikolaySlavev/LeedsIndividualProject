@@ -1,6 +1,8 @@
 #include "drawstreet.h"
 #include <algorithm>
 #include <iostream>
+#include <math.h>
+#include <string>
 
 using namespace std;
 
@@ -134,7 +136,6 @@ void DrawStreet::drawStraightStreet(edge_axis street, float t_start, float t_end
     edge_offset offset_up = street.offset_up;
     edge_offset offset_down = street.offset_down;
     point up, down;
-
     glBegin(GL_TRIANGLE_STRIP);
     glNormal3f(0,1,0);
     while ((t_end - t) > -std::numeric_limits<double>::epsilon()) {
@@ -144,6 +145,22 @@ void DrawStreet::drawStraightStreet(edge_axis street, float t_start, float t_end
         glVertex3f(up.x, up.y, up.z);
         glVertex3f(down.x, down.y, down.z);
     }
+//    point obj_up_start = {(1-t_start)*offset_up.start.x+t_start*offset_up.end.x, 0, (1-t_start)*offset_up.start.z+t_start*offset_up.end.z};
+//    point obj_up_end = {(1-t_end)*offset_up.start.x+t_end*offset_up.end.x, 0, (1-t_end)*offset_up.start.z+t_end*offset_up.end.z};
+//    point obj_down_start = {(1-t_start)*offset_down.start.x+t_start*offset_down.end.x, 0, (1-t_start)*offset_down.start.z+t_start*offset_down.end.z};
+//    point obj_down_end = {(1-t_end)*offset_down.start.x+t_end*offset_down.end.x, 0, (1-t_end)*offset_down.start.z+t_end*offset_down.end.z};
+//    OBJ::objfile << "v " + to_string(obj_up_start.x) + " " + to_string(obj_up_start.y) + " " + to_string(obj_up_start.z) + "\n";
+//    OBJ::objfile << "v " + to_string(obj_up_end.x) + " " + to_string(obj_up_end.y) + " " + to_string(obj_up_end.z) + "\n";
+//    OBJ::objfile << "v " + to_string(obj_down_end.x) + " " + to_string(obj_down_end.y) + " " + to_string(obj_down_end.z) + "\n";
+//    OBJ::objfile << "v " + to_string(obj_down_start.x) + " " + to_string(obj_down_start.y) + " " + to_string(obj_down_start.z) + "\n";
+
+//    OBJ::count_obj+=4;
+//    OBJ::objfile << "f";
+//    for (int i=OBJ::stopped_count_obj; i<OBJ::count_obj; i++) {
+//        OBJ::objfile << " " + to_string(i);
+//    }
+//    OBJ::objfile << "\n";
+//    OBJ::stopped_count_obj = OBJ::count_obj;
     glEnd();
 }
 

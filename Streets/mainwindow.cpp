@@ -25,6 +25,30 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
     nVerSlider->setMaximum(360);
     connect(nVerSlider, SIGNAL(valueChanged(int)), cubeWidget, SLOT(cameraRotateVer(int)));
 
+    // adds a vertical layout to the existing layout in order to define a better structure of the GUI
+    windowLayout->addLayout(optionLayout);
+    // creates a checkbox which would enable and disable light rotation around the world's sphere
+    QCheckBox *checkBoxLight = new QCheckBox("Buildings", this);
+    optionLayout->addWidget(checkBoxLight);
+    connect (checkBoxLight, SIGNAL(released()), cubeWidget, SLOT(enableBuildings()));
+
+    moveXSlider = new QSlider(Qt::Horizontal);
+    windowLayout->addWidget(moveXSlider);
+    moveXSlider->setMinimum(0);
+    moveXSlider->setMaximum(50);
+    connect(moveXSlider, SIGNAL(valueChanged(int)), cubeWidget, SLOT(moveXNode(int)));
+
+    moveZSlider = new QSlider(Qt::Horizontal);
+    windowLayout->addWidget(moveZSlider);
+    moveZSlider->setMinimum(0);
+    moveZSlider->setMaximum(50);
+    connect(moveZSlider, SIGNAL(valueChanged(int)), cubeWidget, SLOT(moveZNode(int)));
+
+    moveNode = new QLineEdit;
+    windowLayout->addWidget(moveNode);
+    moveNode->setPlaceholderText("<node_id> you want to move");
+    connect(moveNode, SIGNAL(textChanged(QString)), cubeWidget, SLOT(changeMoveNode(QString)));
+
 }
 
 MainWindow::~MainWindow() {

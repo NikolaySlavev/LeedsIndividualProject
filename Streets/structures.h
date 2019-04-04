@@ -6,6 +6,7 @@
 #include <limits>
 #include <array>
 #include <GL/glu.h>
+#include <fstream>
 
 struct node {
     int id;
@@ -72,5 +73,12 @@ void CALLBACK tessEndCB();
 void CALLBACK tessErrorCB(GLenum errorCode);
 void CALLBACK tessVertexCB(const GLvoid *data);
 void CALLBACK tessVertexCB2(const GLvoid *data);
+
+class OBJ {
+public:
+    static int count_obj;
+    static int stopped_count_obj;
+    static std::fstream objfile;
+};
 
 #endif // STRUCTURES_H

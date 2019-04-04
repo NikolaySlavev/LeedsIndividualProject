@@ -45,7 +45,15 @@ void Junction::drawJunctions() {
                     quad3[i][1] = 0.5;//dots[i].y;
                     quad3[i][2] = dots[i].z;
                     gluTessVertex(tess, quad3[i], quad3[i]);
+//                    OBJ::objfile << "v " + to_string(dots[i].x) + " " + to_string(dots[i].y) + " " + to_string(dots[i].z) + "\n";
+//                    OBJ::count_obj++;
                  }
+//                OBJ::objfile << "f";
+//                for (int i=OBJ::stopped_count_obj; i<OBJ::count_obj; i++) {
+//                    OBJ::objfile << " " + to_string(i);
+//                }
+//                OBJ::objfile << "\n";
+//                OBJ::stopped_count_obj = OBJ::count_obj;
              gluTessEndContour(tess);
         gluTessEndPolygon(tess);
     }
@@ -62,8 +70,8 @@ void Junction::addJunctionLine(int start, int end, vector<int> target_id) {
     if (!isnan(layout->edges[start][end].offset_up.pair_t_intersection))
         curve.control.push_back(layout->edges[start][end].offset_up.pair_p_intersection);
     vector<int> pair_id = layout->edges[start][end].offset_up.pair_id;
-    int end_pair_id = pair_id[0]; //(int) pair_id / 100;
-    int start_pair_id =  pair_id[1]; //(int) (pair_id % 100 / 10);
+    int end_pair_id = pair_id[0];
+    int start_pair_id =  pair_id[1];
     edge_axis new_edge = layout->edges[start_pair_id][end_pair_id];
     curve.end = toNode(new_edge.offset_down.closest_p_intersection);
     junction_objects[end].push_back(curve);
@@ -226,6 +234,10 @@ vector<float> Junction::findCurvedIntersection(vector<point> e1, vector<point> e
 vector<float> Junction::algorithmIntersection(point e1_start, point e1_end, point e2_start, point e2_end) {
     float t = ((e1_start.x - e2_start.x) * (e2_start.z - e2_end.z) - (e1_start.z - e2_start.z) * (e2_start.x - e2_end.x)) / ((e1_start.x - e1_end.x) * (e2_start.z - e2_end.z) - (e1_start.z - e1_end.z)*(e2_start.x - e2_end.x));
     float u = -(((e1_start.x - e1_end.x) * (e1_start.z - e2_start.z) - (e1_start.z - e1_end.z) * (e1_start.x - e2_start.x)) / ((e1_start.x - e1_end.x) * (e2_start.z - e2_end.z) - (e1_start.z - e1_end.z)*(e2_start.x - e2_end.x)));
+    //inf
+    if (t > 100 || u > 100) {
+        t = NAN; u = NAN;
+    }
     return {t, u};
 }
 

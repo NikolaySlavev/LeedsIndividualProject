@@ -15,6 +15,7 @@ private:
     GLfloat* normal(point a, point b, point c);
     std::vector<std::vector<point>> building_points;
     void drawLine(point s, point e);
+    void drawConcavePolygon(std::vector<point> dots, float height);
 };
 
 #endif // BUILDINGS_H

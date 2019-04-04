@@ -6,6 +6,7 @@
 #include <GL/glu.h>
 #include "layout.h"
 #include <math.h>
+#include <string>
 
 
 class Junction {
