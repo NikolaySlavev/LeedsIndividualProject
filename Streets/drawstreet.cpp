@@ -38,23 +38,22 @@ void DrawStreet::drawStraightLine(edge_axis street) {
     glPointSize(1);
     while ((1 - t) > -std::numeric_limits<double>::epsilon()) {
         dot.x = (1-t)*street.start.x + t*street.end.x;
-        dot.y = 1;
+        dot.y = 0.1;
         dot.z = (1-t)*street.start.z + t*street.end.z;
         //t += street.step_size;
         t += 0.01;
-        glVertex3f(dot.x, dot.y, dot.z);
+        //glVertex3f(dot.x, dot.y, dot.z);
     }
     glEnd();
 }
 
-edge_axis DrawStreet::computeCurvedStreet(node start, node end, vector<point> control) {
+edge_axis DrawStreet::computeCurvedStreet(node start, node end, vector<point> control, float width) {
     float t = 0, line_length;
     point a, b, c, d, e, f, up_f, down_f;
     graphVector line_vector;
     vector<graphVector> normals;
-    edge_axis street = computeStraightStreet(start, end);
+    edge_axis street = computeStraightStreet(start, end, width);
     street.control = control;
-
     while ((1 - t) > -std::numeric_limits<double>::epsilon()) {
         a = Lerp(toPoint(street.start), street.control[0], t);
         b = Lerp(street.control[0], street.control[1], t);
@@ -67,8 +66,8 @@ edge_axis DrawStreet::computeCurvedStreet(node start, node end, vector<point> co
         line_length = findLength(line_vector);
         normals = findNormals(line_vector, line_length);
 
-        up_f = {f.x + normals[0].x, f.y + normals[0].y, f.z + normals[0].z};
-        down_f = {f.x + normals[1].x, f.y + normals[1].y, f.z + normals[1].z};;
+        up_f = {f.x + normals[0].x*width, f.y + normals[0].y*width, f.z + normals[0].z*width};
+        down_f = {f.x + normals[1].x*width, f.y + normals[1].y*width, f.z + normals[1].z*width};;
 
         t += 0.01;
 
@@ -83,16 +82,20 @@ void DrawStreet::drawCurvedStreet(edge_axis street, vector<point> p_start, vecto
 
     glBegin(GL_TRIANGLE_STRIP);
     glNormal3f(0,1,0);
-    glVertex3f(p_start[0].x, p_start[0].y, p_start[0].z);
-    glVertex3f(p_start[1].x, p_start[1].y, p_start[1].z);
+    if (!p_start.empty()) {
+        glVertex3f(p_start[0].x, p_start[0].y, p_start[0].z);
+        glVertex3f(p_start[1].x, p_start[1].y, p_start[1].z);
+    }
     for (int i = i_start; i <= i_end; i++) {
         up_f = street.offset_up.dots[i];
         down_f = street.offset_down.dots[i];
         glVertex3f(up_f.x, up_f.y, up_f.z);
         glVertex3f(down_f.x, down_f.y, down_f.z);
     }
-    glVertex3f(p_end[0].x, p_end[0].y, p_end[0].z);
-    glVertex3f(p_end[1].x, p_end[1].y, p_end[1].z);
+    if (!p_end.empty()) {
+        glVertex3f(p_end[0].x, p_end[0].y, p_end[0].z);
+        glVertex3f(p_end[1].x, p_end[1].y, p_end[1].z);
+    }
     glEnd();
 }
 
@@ -102,12 +105,11 @@ point DrawStreet::Lerp(point p1, point p2, float t) {
     return move;
 }
 
-edge_axis DrawStreet::computeStraightStreet(node start, node end) {
+edge_axis DrawStreet::computeStraightStreet(node start, node end, float width) {
     edge_axis street;
     graphVector line_vector = findVector(toPoint(start), toPoint(end));
     float line_length =  findLength(line_vector);
     vector<graphVector> normals = findNormals(line_vector, line_length);
-    float width = 1.5;
     //float width = rand() % 100;
     //width = (width + 50) / 100;
     normals[0] = {normals[0].x*width, normals[0].y*width, normals[0].z*width};
@@ -145,22 +147,6 @@ void DrawStreet::drawStraightStreet(edge_axis street, float t_start, float t_end
         glVertex3f(up.x, up.y, up.z);
         glVertex3f(down.x, down.y, down.z);
     }
-//    point obj_up_start = {(1-t_start)*offset_up.start.x+t_start*offset_up.end.x, 0, (1-t_start)*offset_up.start.z+t_start*offset_up.end.z};
-//    point obj_up_end = {(1-t_end)*offset_up.start.x+t_end*offset_up.end.x, 0, (1-t_end)*offset_up.start.z+t_end*offset_up.end.z};
-//    point obj_down_start = {(1-t_start)*offset_down.start.x+t_start*offset_down.end.x, 0, (1-t_start)*offset_down.start.z+t_start*offset_down.end.z};
-//    point obj_down_end = {(1-t_end)*offset_down.start.x+t_end*offset_down.end.x, 0, (1-t_end)*offset_down.start.z+t_end*offset_down.end.z};
-//    OBJ::objfile << "v " + to_string(obj_up_start.x) + " " + to_string(obj_up_start.y) + " " + to_string(obj_up_start.z) + "\n";
-//    OBJ::objfile << "v " + to_string(obj_up_end.x) + " " + to_string(obj_up_end.y) + " " + to_string(obj_up_end.z) + "\n";
-//    OBJ::objfile << "v " + to_string(obj_down_end.x) + " " + to_string(obj_down_end.y) + " " + to_string(obj_down_end.z) + "\n";
-//    OBJ::objfile << "v " + to_string(obj_down_start.x) + " " + to_string(obj_down_start.y) + " " + to_string(obj_down_start.z) + "\n";
-
-//    OBJ::count_obj+=4;
-//    OBJ::objfile << "f";
-//    for (int i=OBJ::stopped_count_obj; i<OBJ::count_obj; i++) {
-//        OBJ::objfile << " " + to_string(i);
-//    }
-//    OBJ::objfile << "\n";
-//    OBJ::stopped_count_obj = OBJ::count_obj;
     glEnd();
 }
 

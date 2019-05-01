@@ -5,17 +5,18 @@
 
 class Buildings {
 public:
-    Buildings(Layout *layout);
+    Buildings(std::vector<std::vector<point>> *objects_p);
     void drawBuildings();
     void computeBuildings();
+    std::vector<std::vector<point>> building_points;
+
 private:
-    Layout *layout;
     void polygon(point a, point b, point c, point d);
     void cube(std::vector<point> p);
     GLfloat* normal(point a, point b, point c);
-    std::vector<std::vector<point>> building_points;
     void drawLine(point s, point e);
     void drawConcavePolygon(std::vector<point> dots, float height);
+    std::vector<std::vector<point>> *objects_p;
 };
 
 #endif // BUILDINGS_H

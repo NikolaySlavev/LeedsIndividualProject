@@ -3,12 +3,16 @@
 
 using namespace std;
 
-Junction::Junction(Layout *layout, DrawStreet *street) {
-    this->layout = layout;
-    this->street = street;
+Junction::Junction() {}
+
+Junction::Junction(map<int, node> *nodes, map<int, map<int, edge_axis>> *edges, vector<vector<int>> *objects) {
+    this->nodes = nodes;
+    this->edges = edges;
+    this->objects = objects;
 }
 
 void Junction::drawJunctions() {
+    DrawStreet *street = new DrawStreet();
     GLUtesselator *tess = gluNewTess();
 
     gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
@@ -18,7 +22,6 @@ void Junction::drawJunctions() {
 
     vector<point> dots;
     vector<point> output;
-    vector<vector<point>> all_dots;
     for (auto const& junction : junction_objects) {
         for (curved_edge_axis line: junction.second) {
             if (line.control.empty()) {
@@ -37,23 +40,15 @@ void Junction::drawJunctions() {
     for (vector<point> dots: all_dots) {
         int vec_size = dots.size();
         GLdouble (*quad3)[3] = new GLdouble[vec_size][3];
-        glColor3f(1,1,1);
+        //glColor3f(1,1,1);
         gluTessBeginPolygon(tess, nullptr);
              gluTessBeginContour(tess);
                 for (int i=0; i<dots.size(); i++) {
                     quad3[i][0] = dots[i].x;
-                    quad3[i][1] = 0.5;//dots[i].y;
+                    quad3[i][1] = 0;//dots[i].y;
                     quad3[i][2] = dots[i].z;
                     gluTessVertex(tess, quad3[i], quad3[i]);
-//                    OBJ::objfile << "v " + to_string(dots[i].x) + " " + to_string(dots[i].y) + " " + to_string(dots[i].z) + "\n";
-//                    OBJ::count_obj++;
                  }
-//                OBJ::objfile << "f";
-//                for (int i=OBJ::stopped_count_obj; i<OBJ::count_obj; i++) {
-//                    OBJ::objfile << " " + to_string(i);
-//                }
-//                OBJ::objfile << "\n";
-//                OBJ::stopped_count_obj = OBJ::count_obj;
              gluTessEndContour(tess);
         gluTessEndPolygon(tess);
     }
@@ -61,18 +56,23 @@ void Junction::drawJunctions() {
 
 void Junction::addJunctionLine(int start, int end, vector<int> target_id) {
     curved_edge_axis straight;
-    straight.start = toNode(layout->edges[start][end].offset_down.closest_p_intersection);
-    straight.end = toNode(layout->edges[start][end].offset_up.closest_p_intersection);
+    if (isnan((*edges)[start][end].offset_down.closest_t_intersection))
+        return;
+
+    straight.start = toNode((*edges)[start][end].offset_down.closest_p_intersection);
+    straight.end = toNode((*edges)[start][end].offset_up.closest_p_intersection);
     junction_objects[end].push_back(straight);
 
     curved_edge_axis curve;
-    curve.start = toNode(layout->edges[start][end].offset_up.closest_p_intersection);
-    if (!isnan(layout->edges[start][end].offset_up.pair_t_intersection))
-        curve.control.push_back(layout->edges[start][end].offset_up.pair_p_intersection);
-    vector<int> pair_id = layout->edges[start][end].offset_up.pair_id;
+    curve.start = toNode((*edges)[start][end].offset_up.closest_p_intersection);
+    if (!isnan((*edges)[start][end].offset_up.pair_t_intersection))
+        curve.control.push_back((*edges)[start][end].offset_up.pair_p_intersection);
+    if (isnan((*edges)[start][end].offset_up.pair_t_intersection))
+        return;
+    vector<int> pair_id = (*edges)[start][end].offset_up.pair_id;
     int end_pair_id = pair_id[0];
     int start_pair_id =  pair_id[1];
-    edge_axis new_edge = layout->edges[start_pair_id][end_pair_id];
+    edge_axis new_edge = (*edges)[start_pair_id][end_pair_id];
     curve.end = toNode(new_edge.offset_down.closest_p_intersection);
     junction_objects[end].push_back(curve);
 
@@ -83,10 +83,9 @@ void Junction::addJunctionLine(int start, int end, vector<int> target_id) {
 }
 
 void Junction::findJunctionObjects() {
-    for (auto const& node : layout->nodes) {
-        int start = layout->edges[node.first].begin()->first;
+    for (auto const& node : *nodes) {
+        int start = (*edges)[node.first].begin()->first;
         int end = node.first;
-        cout << "END: " << start << " " << end << endl;
         addJunctionLine(start, end, {start, end});
     }
 }
@@ -97,6 +96,8 @@ void Junction::addClosestIntersection(float closest_t, edge_offset *offset) {
     point end = offset->end;
     if (!offset->dots.empty()) {
         int closest_i = (int) closest_t;
+        if (closest_i >= offset->dots.size())
+            return;
         start = offset->dots[closest_i];
         end = offset->dots[closest_i+1];
         closest_t -= closest_i;
@@ -112,40 +113,39 @@ void Junction::addClosestIntersection(float closest_t, edge_offset *offset) {
 
 void Junction::findClosestIntersections() {
     float closest_t = NAN;
-    for (auto const& edges : layout->edges) {
-        for (auto const& edge : edges.second) {
+    int count = 0;
+    for (auto const& new_edges : (*edges)) {
+        count++;
+        for (auto const& edge : new_edges.second) {
             edge_offset offset_up = edge.second.offset_up;
             edge_offset offset_down = edge.second.offset_down;
 
             if (isnan(offset_down.pair_t_intersection) && isnan(offset_up.pair_t_intersection))
                 continue;
             else if (isnan(offset_down.pair_t_intersection) ||
-                    offset_up.pair_t_index < offset_down.pair_t_index ||
-                    (offset_down.pair_t_index == offset_up.pair_t_index &&
-                    offset_up.pair_t_intersection < offset_down.pair_t_intersection)) {
+                    (!isnan(offset_up.pair_t_intersection) && offset_up.pair_t_index < offset_down.pair_t_index) ||
+                    (!isnan(offset_up.pair_t_intersection) && offset_down.pair_t_index == offset_up.pair_t_index && offset_up.pair_t_intersection < offset_down.pair_t_intersection)) {
                 closest_t = (offset_up.pair_t_index + offset_up.pair_t_intersection) * 0.9;
                 if (offset_up.pair_t_intersection < 0) {
                     closest_t = (offset_up.dots.size() - offset_up.pair_t_intersection) * 0.1;
                 }
             } else if (isnan(offset_up.pair_t_intersection) ||
-                      offset_down.pair_t_index < offset_up.pair_t_index ||
-                      (offset_down.pair_t_index == offset_up.pair_t_index &&
-                       offset_down.pair_t_intersection <= offset_up.pair_t_intersection)) {
+                      (!isnan(offset_down.pair_t_intersection) && offset_down.pair_t_index < offset_up.pair_t_index) ||
+                      (!isnan(offset_down.pair_t_intersection) && offset_down.pair_t_index == offset_up.pair_t_index && offset_down.pair_t_intersection <= offset_up.pair_t_intersection)) {
                 closest_t = (offset_down.pair_t_index + offset_down.pair_t_intersection) * 0.9;
                 if (offset_down.pair_t_intersection < 0) {
                     closest_t = (offset_up.dots.size() - offset_up.pair_t_intersection) * 0.1;
                 }
             }
-
-            addClosestIntersection(closest_t, &layout->edges[edge.second.start.id][edge.second.end.id].offset_up);
-            addClosestIntersection(closest_t, &layout->edges[edge.second.start.id][edge.second.end.id].offset_down);
+            addClosestIntersection(closest_t, &(*this->edges)[edge.second.start.id][edge.second.end.id].offset_up);
+            addClosestIntersection(closest_t, &(*this->edges)[edge.second.start.id][edge.second.end.id].offset_down);
         }
     }
 }
 
 void Junction::addPairs() {
     int s, m, e;
-    for (vector<int> object: layout->objects) {
+    for (vector<int> object: *objects) {
         for (int i=0; i < object.size(); i++) {
             m = object[i];
             if (i == object.size() - 1) {
@@ -164,8 +164,8 @@ void Junction::addPairs() {
 }
 
 void Junction::addPair(int start, int mid,  int end) {
-    edge_offset edge1 = layout->edges[start][mid].offset_up;
-    edge_offset edge2 = layout->edges[mid][end].offset_up;
+    edge_offset edge1 = (*edges)[start][mid].offset_up;
+    edge_offset edge2 = (*edges)[mid][end].offset_up;
 
     vector<float> intersection = findIntersection(edge1, edge2);
     float t = intersection[0];
@@ -175,8 +175,8 @@ void Junction::addPair(int start, int mid,  int end) {
     if (edge2.dots.size() != 0)
         index_u = (edge2.dots.size()-2) - index_u;
 
-    edge_offset *offset_up = &layout->edges[start][mid].offset_up;
-    edge_offset *offset_down = &layout->edges[end][mid].offset_down;
+    edge_offset *offset_up = &(*edges)[start][mid].offset_up;
+    edge_offset *offset_down = &(*edges)[end][mid].offset_down;
     offset_up->pair_id = edge2.id;
     offset_down->pair_id = edge1.id;
 

@@ -6,8 +6,81 @@
 
 using namespace std;
 
-Layout::Layout(DrawStreet *street) {
-    this->street = street;
+Layout::Layout() {
+    gridCurved(-40, 3, 10);
+    node node1 = {count_node_id++, -20, 0, -10}, node2 = {count_node_id++, 0, 0, -10}, node3 = {count_node_id++, 0, 0, 10};
+    vector<vector<node>> inputs = {{node1, node2},
+                                   {node2, node3},
+                                   {node1, node3},
+                                   {node1, nodes[8]},
+                                   {node1, nodes[5]},
+                                   {node2, nodes[6]}
+                                  };
+
+    inputLayout(inputs);
+
+//    fileLayout("example_borovets.csv");
+    street = new DrawStreet();
+    junction = new Junction(&nodes, &edges, &objects);
+    blocks = new BuildingBlocks(&nodes, &edges, &objects, &objects_p);
+    buildings = new Buildings(&objects_p);
+    subdivision = new BlockSubdivision();
+//    blocks->findBlocks();
+//    junction->addPairs();
+//    junction->findClosestIntersections();
+//    junction->findJunctionObjects();
+//    blocks->removeLargest();
+//    blocks->computeDrawableBlocks();
+//    objects_p = subdivision->allSubdivision(objects_p);
+//    buildings->computeBuildings();
+}
+
+void Layout::updateWidthSize(float width) {
+    street_width = width;
+    for (auto const& edge: edges) {
+        for (auto const& e: edge.second) {
+            if (!edges[edge.first][e.first].control.empty())
+                edges[edge.first][e.first] = street->computeCurvedStreet(nodes[edge.first], nodes[e.first], edges[edge.first][e.first].control, width);
+            else
+                edges[edge.first][e.first] = street->computeStraightStreet(nodes[edge.first], nodes[e.first], width);
+        }
+    }
+    updateScreen();
+}
+
+void Layout::updateMove(int move_node) {
+    edge_axis changed_edge1, changed_edge2;
+    for (auto const& edge: edges[move_node]) {
+        if (!edge.second.control.empty()) {
+            changed_edge1 = street->computeCurvedStreet(nodes[move_node], nodes[edge.first], edges[move_node][edge.first].control, street_width);
+            changed_edge2 = street->computeCurvedStreet(nodes[edge.first], nodes[move_node], edges[edge.first][move_node].control, street_width);
+        } else {
+            changed_edge1 = street->computeStraightStreet(nodes[move_node], nodes[edge.first], street_width);
+            changed_edge2 = street->computeStraightStreet(nodes[edge.first], nodes[move_node], street_width);
+        }
+        edges[move_node][edge.first] = changed_edge1;
+        edges[edge.first][move_node] = changed_edge2;
+    }
+    updateScreen();
+}
+
+void Layout::updateScreen() {
+    street = new DrawStreet();
+    junction = new Junction(&nodes, &edges, &objects);
+    blocks = new BuildingBlocks(&nodes, &edges, &objects, &objects_p);
+    buildings = new Buildings(&objects_p);
+    subdivision = new BlockSubdivision();
+
+    objects = {};
+    objects_p = {};
+    blocks->findBlocks();
+    junction->addPairs();
+    junction->findClosestIntersections();
+    junction->findJunctionObjects();
+    blocks->removeLargest();
+    blocks->computeDrawableBlocks();
+    objects_p = subdivision->allSubdivision(objects_p);
+    buildings->computeBuildings();
 }
 
 void Layout::inputLayout(vector<vector<node>> nodePairs) {
@@ -34,10 +107,9 @@ void Layout::inputLayout(vector<vector<node>> nodePairs) {
 }
 
 void Layout::fileLayout(string filename) {
-    cout << "!!!!!!!" << endl;
-    ifstream myfile("D:/Uni/Individual Project/SourceCode/LeedsIndividualProject/example_old.csv");
+    ifstream myfile("D:/Uni/Individual Project/SourceCode/LeedsIndividualProject/example.csv");
     if (!myfile.is_open()) {
-        cout << "FILE CANNOT BE OPENED" << endl;
+        cerr << "FILE CANNOT BE OPENED" << endl;
         return;
     }
     node n;
@@ -45,6 +117,7 @@ void Layout::fileLayout(string filename) {
     vector<string> output;
     bool next = false;
     edge_axis edge;
+    point c1, c2;
     while (myfile.good()) {
         output = {};
         getline(myfile, line, '\n');
@@ -58,23 +131,26 @@ void Layout::fileLayout(string filename) {
             output.push_back(substr);
         }
         if (!next) {
-            cout << line << endl;
             addNode({stoi(output[0]), stof(output[1]), stof(output[2]), stof(output[3])});
         } else {
-            cout << "OK2" << endl;
-            edge = street->computeStraightStreet(nodes[stoi(output[0])], nodes[stoi(output[1])]);
-            addEdge(edge.start.id, edge.end.id, edge);
-            edge = street->computeStraightStreet(nodes[stoi(output[1])], nodes[stoi(output[0])]);
-            addEdge(edge.start.id, edge.end.id, edge);
+            if (output.size() == 8) {
+                c1 = {stof(output[2]), stof(output[3]), stof(output[4])};
+                c2 = {stof(output[5]), stof(output[6]), stof(output[7])};
+                edge = street->computeCurvedStreet(nodes[stoi(output[0])], nodes[stoi(output[1])], {c1, c2});
+                addEdge(edge.start.id, edge.end.id, edge);
+                edge = street->computeCurvedStreet(nodes[stoi(output[1])], nodes[stoi(output[0])], {c2, c1});
+                addEdge(edge.start.id, edge.end.id, edge);
+            } else {
+                edge = street->computeStraightStreet(nodes[stoi(output[0])], nodes[stoi(output[1])]);
+                addEdge(edge.start.id, edge.end.id, edge);
+                edge = street->computeStraightStreet(nodes[stoi(output[1])], nodes[stoi(output[0])]);
+                addEdge(edge.start.id, edge.end.id, edge);
+            }
         }
     }
     myfile.close();
-    cout << "DONE" << endl;
 }
 
-//void random() {}
-
-//void gridRandom() {}
 
 void Layout::gridCurved(int start, int size, int increment) {
     int start_count = count_node_id;
@@ -116,7 +192,8 @@ void Layout::gridCurved(int start, int size, int increment) {
 
 void Layout::gridStraight(int start, int size, int increment) {
     int start_count = count_node_id;
-    for (float i = start; i < (size*increment + start); i += increment) {
+
+    for (float i = start; i < (size*(increment+6) + start); i += (increment+6)) {
         for (float j = start; j < (size*increment + start); j += increment) {
             node new_node = {count_node_id, i, 0, j};
             addNode(new_node);
@@ -143,7 +220,6 @@ void Layout::gridStraight(int start, int size, int increment) {
 }
 
 void Layout::addEdge(int node_s, int node_e, edge_axis edge) {
-    // FIXXXXXX for curves
     edges[node_s][node_e] = edge;
 }
 

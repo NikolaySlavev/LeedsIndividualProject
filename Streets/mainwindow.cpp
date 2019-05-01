@@ -49,6 +49,14 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
     moveNode->setPlaceholderText("<node_id> you want to move");
     connect(moveNode, SIGNAL(textChanged(QString)), cubeWidget, SLOT(changeMoveNode(QString)));
 
+    changeWidth = new QLineEdit;
+    windowLayout->addWidget(changeWidth);
+    changeWidth->setPlaceholderText("set width of streets");
+    connect(changeWidth, SIGNAL(textChanged(QString)), cubeWidget, SLOT(changeWidthSize(QString)));
+
+    writeOBJ = new QPushButton("OBJ");
+    windowLayout->addWidget(writeOBJ);
+    connect(writeOBJ, SIGNAL(released()), cubeWidget, SLOT(writeOBJ()));
 }
 
 MainWindow::~MainWindow() {

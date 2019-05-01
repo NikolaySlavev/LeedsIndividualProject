@@ -3,8 +3,8 @@
 using namespace std;
 
 
-BlockSubdivision::BlockSubdivision(Junction* junction) {
-    this->junction = junction;
+BlockSubdivision::BlockSubdivision() {
+    //this->nodes = nodes;
 }
 
 int BlockSubdivision::orientation(point p, point q, point r) {
@@ -57,7 +57,6 @@ void BlockSubdivision::drawSmallestRectangle() {
             glColor3f(0,0,0);
             glVertex3f(c0.x, 6, c0.z);
             glVertex3f(c1.x, 6, c1.z);
-            //cout <<"OPOPOPOP " << c0.x << " " << c0.z << " " << c1.x << " " << c1.z << endl;
             glColor3f(1,0,1);
             glVertex3f(c2.x, 6, c2.z);
         }
@@ -88,18 +87,19 @@ void BlockSubdivision::drawSmallestRectangle() {
 vector<vector<point>> BlockSubdivision::allSubdivision(vector<vector<point>> objects_p) {
     vector<vector<point>> output = {}, divided = {};
     for (int i=0; i<objects_p.size(); i++) {
-    //for (vector<point> object_p: objects_p) {
-        divided = subdivision(objects_p[i]);
+        divided = subdivision(objects_p[i], true);
         output.insert(output.end(), divided.begin(), divided.end());
     }
     //return divided;
     return output;
 }
 
-vector<vector<point>> BlockSubdivision::subdivision(vector<point> concave_p) {
+vector<vector<point>> BlockSubdivision::subdivision(vector<point> concave_p, bool first) {
     vector<point> convex_p = convexHull(concave_p);
     rectangle bounding_box = smallestRectangle(convex_p);
     if (bounding_box.area < 30 || isinf(bounding_box.area)){
+        if (first == true)
+            return {};
         return {concave_p};
     }
     vector<vector<point>> all_objects, objects, output;
@@ -107,9 +107,9 @@ vector<vector<point>> BlockSubdivision::subdivision(vector<point> concave_p) {
     if (divided_rects.empty())
         return {concave_p};
 
-    objects = subdivision(divided_rects[0]);
+    objects = subdivision(divided_rects[0], false);
     all_objects.insert(all_objects.end(), objects.begin(), objects.end());
-    objects = subdivision(divided_rects[1]);
+    objects = subdivision(divided_rects[1], false);
     all_objects.insert(all_objects.end(), objects.begin(), objects.end());
     return all_objects;
 }
@@ -125,6 +125,7 @@ vector<vector<point>> BlockSubdivision::divideRect(rectangle rect, vector<point>
     point p;
     vector<int> inter_i = {};
     vector<point> inter_p = {};
+    Junction* junction = new Junction();
 
     if (-rect.leftmost + rect.rightmost >= rect.upmost) {
         largest_dist = (rect.leftmost + rect.rightmost)/2;

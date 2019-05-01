@@ -13,51 +13,7 @@ MainWidget::MainWidget(QWidget *parent):QGLWidget(parent) {
 void MainWidget::initializeGL() {
     setFocusPolicy(Qt::StrongFocus);
     glClearColor(0.3, 0.3, 0.3, 0.0);
-    layout->gridStraight(-40, 3, 10);
-    node node1 = {layout->count_node_id++, -20, 0, -10}, node2 = {layout->count_node_id++, 0, 0, -10}, node3 = {layout->count_node_id++, 0, 0, 10};
-    vector<vector<node>> inputs = {{node1, node2},
-                                   {node2, node3},
-                                   {node1, node3},
-                                   {node1, layout->nodes[8]},
-                                   {node1, layout->nodes[5]},
-                                   {node2, layout->nodes[6]}
-                                  };
-
-//    node node0 = {layout->count_node_id++, -8.537976, 0, -8.540727};
-//    node node1 = {layout->count_node_id++, -50, 0, -50};
-//    node node2 = {layout->count_node_id++, -7.590774, 0, -7.590873};
-//    node node3 = {layout->count_node_id++, -38.532714, 0, 24.308835};
-//    vector<vector<node>> inputs = {{node0, node2},
-//                                   {node1, node0},
-//                                   {node2, node1},
-//                                   {node3, node2},
-//                                   {node0, node},
-//                                  };
-
-    layout->inputLayout(inputs);
-//    OBJ::objfile.open("D:/Uni/Individual Project/SourceCode/LeedsIndividualProject/build-Streets-QT_VSdebug-Debug/testobj.obj", fstream::out);
-//    fstream new_obj;
-//    new_obj.open("aaa.txt", fstream::out);
-//    new_obj << "test\n";
-//    new_obj.close();
-//    layout->fileLayout("example.csv");
-    street = new DrawStreet();
-    junction = new Junction(layout, street);
-    blocks = new BuildingBlocks(layout, street, junction);
-    buildings = new Buildings(layout);
-    subdivision = new BlockSubdivision(junction);
-    blocks->findBlocks();
-    junction->addPairs();
-    junction->findClosestIntersections();
-    junction->findJunctionObjects();
-    blocks->removeLargest();
-    blocks->computeDrawableBlocks();
-    for (int i=0; i<layout->objects_p.size(); i++) {
-        subdivision->convexHull(layout->objects_p[i]);
-    }
-    subdivision->findSmallestRectangles();
-    layout->objects_p = subdivision->allSubdivision(layout->objects_p);
-    buildings->computeBuildings();
+    layout = new Layout();
 }
 
 void MainWidget::cameraRotateHor(int value) { horVal = value; update(); }
@@ -68,6 +24,18 @@ void MainWidget::enableBuildings() { enable_buildings = !enable_buildings; updat
 
 void MainWidget::changeMoveNode(QString value) {
     move_node = value.toInt();
+    updateMove();
+}
+
+void MainWidget::changeWidthSize(QString value) {
+    width = value.toFloat();
+    layout->updateWidthSize(width);
+    update();
+}
+
+void MainWidget::writeOBJ() {
+    OBJ *obj = new OBJ(layout);
+    obj->writeObj();
 }
 
 void MainWidget::moveZNode(int value) {
@@ -88,35 +56,7 @@ void MainWidget::moveXNode(int value) {
 }
 
 void MainWidget::updateMove() {
-
-    edge_axis changed_edge;
-    for (auto const& edge: layout->edges[move_node]) {
-        changed_edge = street->computeStraightStreet(layout->nodes[move_node], layout->nodes[edge.first]);
-        layout->edges[move_node][edge.first] = changed_edge;
-        changed_edge = street->computeStraightStreet(layout->nodes[edge.first], layout->nodes[move_node]);
-        layout->edges[edge.first][move_node] = changed_edge;
-    }
-
-    street = new DrawStreet();
-    junction = new Junction(layout, street);
-    blocks = new BuildingBlocks(layout, street, junction);
-    buildings = new Buildings(layout);
-    subdivision = new BlockSubdivision(junction);
-
-    layout->objects = {};
-    layout->objects_p = {};
-    blocks->findBlocks();
-    junction->addPairs();
-    junction->findClosestIntersections();
-    junction->findJunctionObjects();
-    blocks->removeLargest();
-    blocks->computeDrawableBlocks();
-    for (int i=0; i<layout->objects_p.size(); i++) {
-        subdivision->convexHull(layout->objects_p[i]);
-    }
-    subdivision->findSmallestRectangles();
-    layout->objects_p = subdivision->allSubdivision(layout->objects_p);
-    buildings->computeBuildings();
+    layout->updateMove(move_node);
     update();
 }
 
@@ -141,17 +81,13 @@ void MainWidget::resizeGL(int w, int h) { // resizeGL()
 }
 
 void MainWidget::keyPressEvent(QKeyEvent *keyEvent) {
-    cout << "OKOKO" << endl;
     float fraction = 5.0f;
-
     switch (keyEvent->key()) {
     case Qt::Key_Down:
-        cout << "DOWN" << endl;
         x -= lx * fraction;
         z -= lz * fraction;
         break;
     case Qt::Key_Up:
-        cout << "UP" << endl;
         x += lx * fraction;
         z += lz * fraction;
         break;
@@ -179,14 +115,8 @@ void MainWidget::paintGL() {
     glLoadIdentity();
 
     glRotatef(horVal,1,0,0);
-//    glRotatef(verVal,0,1,0);
 
-    cout << x << " " <<  z << " " << lx << " " << lz << endl;
-    gluLookAt(	x, verVal, z,
-                x+lx, verVal,  z+lz,
-                0.0f, 1.0f,  0.0f);
-
-//    gluLookAt(0,0,1, 0.0,0.0,0.0, 0.0,1.0,0.0);
+    gluLookAt(x, verVal, z, x+lx, verVal, z+lz, 0.0f, 1.0f, 0.0f);
 
     glPushMatrix();
     glColor3f(0.5,0.5,0.5);
@@ -203,13 +133,22 @@ void MainWidget::paintGL() {
                        first_t = 1 - rev_edge.offset_down.closest_t_intersection;
                    if (!isnan(edge.second.offset_down.closest_t_intersection))
                        second_t = edge.second.offset_down.closest_t_intersection;
-                   street->drawStraightStreet(edge.second, first_t, second_t);
+                   layout->street->drawStraightStreet(edge.second, first_t, second_t);
                } else {
-                   int i_end = edge.second.offset_up.closest_i_intersection;
-                   vector<point> p_end = {edge.second.offset_up.closest_p_intersection, edge.second.offset_down.closest_p_intersection};
-                   vector<point> p_start = {rev_edge.offset_up.closest_p_intersection, rev_edge.offset_down.closest_p_intersection};
-                   int i_start = (rev_edge.offset_up.dots.size() - 1) - rev_edge.offset_up.closest_i_intersection;
-                   street->drawCurvedStreet(edge.second, p_start, p_end, i_start, i_end);
+                   int i_start = 0;
+                   int i_end = edge.second.offset_down.dots.size()-1;
+                   vector<point> p_end = {};
+                   vector<point> p_start = {};
+                   if (!isnan(edge.second.offset_up.closest_t_intersection)) {
+                        i_end = edge.second.offset_up.closest_i_intersection;
+                        p_end = {edge.second.offset_up.closest_p_intersection, edge.second.offset_down.closest_p_intersection};
+                   }
+                    if (!isnan(rev_edge.offset_up.closest_t_intersection)) {
+                       i_start = (rev_edge.offset_up.dots.size() - 1) - rev_edge.offset_up.closest_i_intersection;
+                       p_start = {rev_edge.offset_up.closest_p_intersection, rev_edge.offset_down.closest_p_intersection};
+                    }
+
+                   layout->street->drawCurvedStreet(edge.second, p_start, p_end, i_start, i_end);
                }
            }
         }
@@ -219,48 +158,64 @@ void MainWidget::paintGL() {
     for (auto const& edges : layout->edges) {
        for (auto const& edge : edges.second) {
            glColor3f(1,0,0);
-           glPointSize(4);
+           glPointSize(6);
            glBegin(GL_POINTS);
            if (!isnan(edge.second.offset_down.pair_t_intersection)) {
                 point p = edge.second.offset_down.pair_p_intersection;
-                glVertex3f(p.x, 2, p.z);
+                //glVertex3f(p.x, 1, p.z);
            }
             point p2 = edge.second.offset_down.closest_p_intersection;
             point p3 = edge.second.offset_up.closest_p_intersection;
             //cout << "P.X" << p.x << " " << p.z << endl;
 
-            glColor3f(0,1,0);
-            //glVertex3f(p2.x, 2, p2.z);
-            //glVertex3f(p3.x, 2, p3.z);
+            //glColor3f(0,1,0);
+            //glVertex3f(p2.x, 1, p2.z);
+            //glVertex3f(p3.x, 1, p3.z);
+
+
+
+//            float closest_t = 0.45;
+//            point closest_p = {(1-closest_t)*test1.x + closest_t*test2.x,
+//                               (1-closest_t)*test1.y + closest_t*test2.y,
+//                               (1-closest_t)*test1.z + closest_t*test2.z};
+//            glColor3f(0,0,0);
+//            glVertex3f(test1.x, 1, test1.z);
+//            glVertex3f(test2.x, 1, test2.z);
+//            glVertex3f(closest_p.x, 1, closest_p.z);
+
+//            for (auto test: layout->edges[1][0].offset_down.dots) {
+//                glVertex3f(test.x, 1, test.z);
+//            }
+//            for (auto test: layout->edges[1][0].offset_up.dots) {
+//                glVertex3f(test.x, 1, test.z);
+//            }
+
            glEnd();
        }
     }
     glPopMatrix();
     glPushMatrix();
-    blocks->drawBlocks();
+    layout->blocks->drawBlocks();
     glPopMatrix();
 
     glPushMatrix();
-    glColor3f(0,0,1);
-    junction->drawJunctions();
+    //glColor3f(0.5,0.5,0.5);
+    glColor3f(1,1,1);
+    layout->junction->drawJunctions();
     glPopMatrix();
-
-    cout << "OK1" << endl;
 
     if (enable_buildings) {
         glPushMatrix();
-        buildings->drawBuildings();
+        layout->buildings->drawBuildings();
         glPopMatrix();
     }
-    cout << "OK2" << endl;
     glPushMatrix();
-    subdivision->drawConvexHull();
+    //layout->subdivision->drawConvexHull();
     glPopMatrix();
 
     glPushMatrix();
-    subdivision->drawSmallestRectangle();
+    //layout->subdivision->drawSmallestRectangle();
     glPopMatrix();
-//    OBJ::objfile.close();
 
     glFlush();
 }

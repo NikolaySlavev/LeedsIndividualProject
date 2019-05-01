@@ -8,7 +8,7 @@
 
 class BlockSubdivision {
 public:
-    BlockSubdivision(Junction* junction);
+    BlockSubdivision();
     std::vector<point> convexHull(std::vector<point> points);
     rectangle smallestRectangle(std::vector<point> convex);
     void drawConvexHull();
@@ -19,7 +19,6 @@ public:
     std::vector<std::vector<point>> divideRect(rectangle rect, std::vector<point> dots);
     std::vector<std::vector<point>> allSubdivision(std::vector<std::vector<point>> objects_p);
 private:
-    Junction* junction;
     static point p0;
     static int compare(const void *vp1, const void *vp2);
     static int orientation(point p, point q, point r);
@@ -30,7 +29,7 @@ private:
     graphVector Normalise(graphVector vec);
     int Dot(graphVector vec1, graphVector vec2);
     float pointDistance(graphVector n, point a, point p);
-    std::vector<std::vector<point>> subdivision(std::vector<point> concave_p);
+    std::vector<std::vector<point>> subdivision(std::vector<point> concave_p, bool first);
     float convexArea(std::vector<point> convex);
 };
 
