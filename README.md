@@ -10,7 +10,7 @@ The software was developed and tested on a Windows machine only but with little 
 
 The source code is comprised of two parts, Parser and Main, which are run separately. As a result, the parsing will be applied ones per extracted map region and will not run every time the Main software is visualised.
 
-  # Parser (Installation)
+  # Parser (Installation and Compilation)
   The only installation required is the library ReadOSM explained here: http://www.gaia-gis.it/gaia-sins/readosm-1.1.0-doxy-doc/index.html 
   Note: The steps are for installing it through Cygwin but anything else can be used as well. 
   The steps are as follows: 
@@ -23,3 +23,19 @@ The source code is comprised of two parts, Parser and Main, which are run separa
   Note: The installation is quite tricky because there are many prerequisite packages. If it fails for some reason, saying that it cannot     find something, there is a high chance that it is a package that can be installed from Cygwin. 
   After the installation is complete, compile the Parser code as follows: g++ -I/usr/local/include parseinput.cpp parseinput.h –o
   my_program –L/usr/local/lib – lreadosm –lexpat –lz
+  
+  # Parser (Run)
+  Export a map region from OpenStreetMap 
+  From Cygwin run ./my_program.exe <exportedMapName.osm> 
+  
+  # Main (Installation and Compilation)
+  The main code is in the folder Streets and can be run using QT. The file Streets.pro contains the needed arguments, libraries and
+  header files.  
+  Note: the .pro file is compatible with Windows and includes –lGLU32 and OpenGL32 
+  
+  # Main (Run)
+  Run like a usual Qt code
+  If you want to see the model in a 3D editor program, press the OBJ button from the interface and load the resulting OBJ file in the 
+  chosen editor. 
+ 
+  
