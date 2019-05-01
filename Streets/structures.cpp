@@ -14,6 +14,7 @@ edge_axis toEdgeAxis(curved_edge_axis input) {
     return output;
 }
 
+// supporting methods for the tessellator of concave polygons
 void CALLBACK tessBeginCB(GLenum which) { glBegin(which); }
 
 void CALLBACK tessEndCB() { glEnd(); }

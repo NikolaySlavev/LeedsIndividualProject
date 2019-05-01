@@ -11,6 +11,7 @@ BuildingBlocks::BuildingBlocks(map<int, node> *nodes, map<int, map<int, edge_axi
 }
 
 void BuildingBlocks::removeLargest() {
+    // removes the loop that goes around the boundary of the graph
     int largest = 0;
     int index = 0;
     for (int i = 0; i < objects->size(); i++) {
@@ -52,6 +53,7 @@ void BuildingBlocks::removeLargest() {
 }
 
 void BuildingBlocks::computeDrawableBlocks() {
+    // computes the blocks that will not overlap with any other segments
     vector<point> dots;
     vector<point> output;
     vector<point> edge_nodes;
@@ -118,6 +120,7 @@ void BuildingBlocks::computeDrawableBlocks() {
 }
 
 void BuildingBlocks::drawBlocks() {
+    // draws the blocks which can be concave
     GLUtesselator *tess = gluNewTess();
     gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
     gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
@@ -147,6 +150,7 @@ void BuildingBlocks::drawBlocks() {
 }
 
 float BuildingBlocks::findAngle(graphVector vec1, graphVector vec2) {
+    // finds the angle between two vectors
     float dot_product = vec1.x*vec2.x + vec1.z*vec2.z;
     float determinant = vec1.x*vec2.z - vec1.z*vec2.x;
     float angle = atan2(determinant, dot_product);
@@ -159,6 +163,7 @@ float BuildingBlocks::findAngle(graphVector vec1, graphVector vec2) {
 }
 
 void BuildingBlocks::findBlocks() {
+    // the initial step of finding enclosed loops
     int v = 0;
     map<int, map<int, bool>> visited_edges;
 
@@ -198,6 +203,7 @@ void BuildingBlocks::findBlocks() {
 }
 
 void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vector<int> found) {
+    // the recursive algorithm that finds enclosed loops
     if (stack_count >= 1200) {
         return;
     }

@@ -8,6 +8,7 @@ BlockSubdivision::BlockSubdivision() {
 }
 
 int BlockSubdivision::orientation(point p, point q, point r) {
+     // return the orientation of the three passed points (clockwise, counter-clockwise)
     int val = (q.z - p.z) * (r.x - q.x) - (q.x - p.x) * (r.z - q.z);
     if (val == 0) return 0;
     return (val > 0)? 1: 2;
@@ -26,6 +27,7 @@ point BlockSubdivision::nextToTop(vector<point> &S) {
 }
 
 int BlockSubdivision::swap(point &p1, point &p2) {
+    // swaps the two values passed by reference
     point temp = p1;
     p1 = p2;
     p2 = temp;
@@ -33,19 +35,23 @@ int BlockSubdivision::swap(point &p1, point &p2) {
 }
 
 graphVector BlockSubdivision::Normalise(graphVector vec) {
+    // normalises the vector to be a unit vector
     float length = sqrt(pow(vec.x,2) + pow(vec.y,2) + pow(vec.z,2));
     return {vec.x/length, vec.y/length, vec.z/length};
 }
 
 graphVector BlockSubdivision::Perp(graphVector vec) {
+    // rotates the vector by 90 degrees
     return {-vec.z, vec.y, vec.x};
 }
 
 int BlockSubdivision::Dot(graphVector vec1, graphVector vec2) {
+    // finds the dot product of the two vectors
     return vec1.x*vec2.x + vec1.y+vec2.y + vec1.z+vec2.z;
 }
 
 void BlockSubdivision::drawSmallestRectangle() {
+    // used for debuggging and draws the minimum bounding boxes
     point c0,c1,c2,c3,c4;
     glPointSize(6);
     glBegin(GL_POINTS);
@@ -85,6 +91,7 @@ void BlockSubdivision::drawSmallestRectangle() {
 }
 
 vector<vector<point>> BlockSubdivision::allSubdivision(vector<vector<point>> objects_p) {
+    // method that calls all building blocks to subdivide
     vector<vector<point>> output = {}, divided = {};
     for (int i=0; i<objects_p.size(); i++) {
         divided = subdivision(objects_p[i], true);
@@ -95,6 +102,7 @@ vector<vector<point>> BlockSubdivision::allSubdivision(vector<vector<point>> obj
 }
 
 vector<vector<point>> BlockSubdivision::subdivision(vector<point> concave_p, bool first) {
+    // a recursive method which does the subdivision
     vector<point> convex_p = convexHull(concave_p);
     rectangle bounding_box = smallestRectangle(convex_p);
     if (bounding_box.area < 30 || isinf(bounding_box.area)){
@@ -146,14 +154,6 @@ vector<vector<point>> BlockSubdivision::divideRect(rectangle rect, vector<point>
         e2.dots.insert(e2.dots.end(), dots.begin()+next, dots.end());
         if (next!=0)
             e2.dots.push_back(dots[0]);
-//        if (i == 2) {
-//            if (e2.dots.size() == 1)
-//                break;
-//            t_u = junction->findIntersection(e1, e2);
-//            if (t_u[1] > 0 && t_u[1] < 1)
-//                inter_i = {};
-//            break;
-//        }
         t_u = junction->findIntersection(e1, e2);
         if (isnan(t_u[0]) || isnan(t_u[1])) {
             cerr << "[Error] Cannot find subdivision intersection" << endl;
@@ -194,6 +194,7 @@ float BlockSubdivision::pointDistance(graphVector n, point a, point p) {
 }
 
 void BlockSubdivision::findSmallestRectangles() {
+    // finds the minimum bounding box
     int end;
     rectangle best_rect;
     for (vector<point> convex: convex_hulls) {
@@ -203,6 +204,7 @@ void BlockSubdivision::findSmallestRectangles() {
 }
 
 float BlockSubdivision::convexArea(vector<point> convex) {
+    // finds the area of a convex polygon
     float area = 0;
     int j = convex.size() - 1;
     for (int i = 0; i < convex.size(); i++) {
@@ -268,6 +270,7 @@ rectangle BlockSubdivision::smallestRectangle(vector<point> convex) {
 point BlockSubdivision::p0;
 
 void BlockSubdivision::drawConvexHull() {
+    // used for debugging
     glPointSize(4);
     glColor3f(0,1,0);
     glBegin(GL_POINTS);
@@ -280,6 +283,7 @@ void BlockSubdivision::drawConvexHull() {
 }
 
 vector<point> BlockSubdivision::convexHull(vector<point> points) {
+    // finds the convex hull of the given points
    int zmin = points[0].z, min = 0;
    int n = points.size();
    for (int i = 1; i < n; i++) {

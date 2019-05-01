@@ -7,35 +7,38 @@
 using namespace std;
 
 Layout::Layout() {
-    gridCurved(-40, 3, 10);
-    node node1 = {count_node_id++, -20, 0, -10}, node2 = {count_node_id++, 0, 0, -10}, node3 = {count_node_id++, 0, 0, 10};
-    vector<vector<node>> inputs = {{node1, node2},
-                                   {node2, node3},
-                                   {node1, node3},
-                                   {node1, nodes[8]},
-                                   {node1, nodes[5]},
-                                   {node2, nodes[6]}
-                                  };
+//    // random layout
+//    gridCurved(-40, 3, 10); // creates grid layout
+//    node node1 = {count_node_id++, -20, 0, -10}, node2 = {count_node_id++, 0, 0, -10}, node3 = {count_node_id++, 0, 0, 10};
+//    vector<vector<node>> inputs = {{node1, node2},
+//                                   {node2, node3},
+//                                   {node1, node3},
+//                                   {node1, nodes[8]},
+//                                   {node1, nodes[5]},
+//                                   {node2, nodes[6]}
+//                                  };
 
-    inputLayout(inputs);
+//    inputLayout(inputs);
 
-//    fileLayout("example_borovets.csv");
+    // load the specified file as a layout
+    fileLayout("example_borovets.csv");
     street = new DrawStreet();
     junction = new Junction(&nodes, &edges, &objects);
     blocks = new BuildingBlocks(&nodes, &edges, &objects, &objects_p);
     buildings = new Buildings(&objects_p);
     subdivision = new BlockSubdivision();
-//    blocks->findBlocks();
-//    junction->addPairs();
-//    junction->findClosestIntersections();
-//    junction->findJunctionObjects();
-//    blocks->removeLargest();
-//    blocks->computeDrawableBlocks();
-//    objects_p = subdivision->allSubdivision(objects_p);
-//    buildings->computeBuildings();
+    blocks->findBlocks(); // finds graph loops
+    junction->addPairs(); // adds the found counter-clockwise neighbours
+    junction->findClosestIntersections(); //find the closest intersectinos between street offest lines
+    junction->findJunctionObjects(); //find all junction objects
+    blocks->removeLargest(); // removes the outer loop around the graph
+    blocks->computeDrawableBlocks(); //finds the building areas considering all overlapping segments
+    objects_p = subdivision->allSubdivision(objects_p); // subdivides the building areas
+    buildings->computeBuildings(); // computes building structures
 }
 
 void Layout::updateWidthSize(float width) {
+    // updates the width of the streets
     street_width = width;
     for (auto const& edge: edges) {
         for (auto const& e: edge.second) {
@@ -49,6 +52,7 @@ void Layout::updateWidthSize(float width) {
 }
 
 void Layout::updateMove(int move_node) {
+    // updates a nodes location
     edge_axis changed_edge1, changed_edge2;
     for (auto const& edge: edges[move_node]) {
         if (!edge.second.control.empty()) {
@@ -65,6 +69,7 @@ void Layout::updateMove(int move_node) {
 }
 
 void Layout::updateScreen() {
+    // updates the model when width is changed or a node is moved
     street = new DrawStreet();
     junction = new Junction(&nodes, &edges, &objects);
     blocks = new BuildingBlocks(&nodes, &edges, &objects, &objects_p);
@@ -84,7 +89,7 @@ void Layout::updateScreen() {
 }
 
 void Layout::inputLayout(vector<vector<node>> nodePairs) {
-    // very dodgy code!!! with node and edge ids
+    // allows manual inputting
     bool exist = false;
     for (int i = 0; i < nodePairs.size(); i++) {
         for (int j=0; j < nodePairs[i].size(); j++) {
@@ -107,6 +112,7 @@ void Layout::inputLayout(vector<vector<node>> nodePairs) {
 }
 
 void Layout::fileLayout(string filename) {
+    // opens a file to be used to model the street layout
     ifstream myfile("D:/Uni/Individual Project/SourceCode/LeedsIndividualProject/example.csv");
     if (!myfile.is_open()) {
         cerr << "FILE CANNOT BE OPENED" << endl;
@@ -153,6 +159,7 @@ void Layout::fileLayout(string filename) {
 
 
 void Layout::gridCurved(int start, int size, int increment) {
+    // creates a curved grid of streets
     int start_count = count_node_id;
     for (float i = start; i < (size*increment + start); i += increment) {
         for (float j = start; j < (size*increment + start); j += increment) {
@@ -191,6 +198,7 @@ void Layout::gridCurved(int start, int size, int increment) {
 }
 
 void Layout::gridStraight(int start, int size, int increment) {
+    // creates a straight grid of streets
     int start_count = count_node_id;
 
     for (float i = start; i < (size*(increment+6) + start); i += (increment+6)) {
@@ -220,9 +228,11 @@ void Layout::gridStraight(int start, int size, int increment) {
 }
 
 void Layout::addEdge(int node_s, int node_e, edge_axis edge) {
+    // adds an edge to the graph
     edges[node_s][node_e] = edge;
 }
 
 void Layout::addNode(node new_node) {
+    // adds a node to the graph
     nodes[new_node.id] = new_node;
 }

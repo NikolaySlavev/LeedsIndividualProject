@@ -8,9 +8,9 @@ OBJ::OBJ(Layout *layout) {
 
 void OBJ::writeObj() {
     objfile.open("D:/Uni/Individual Project/SourceCode/LeedsIndividualProject/build-Streets-QT_VSdebug-Debug/testobj.obj", fstream::out);
-    writeStreets();
-    writeJunctions();
-    writeBuildings();
+    writeStreets(); // writes all streets to the file either straight or curved
+    writeJunctions(); // writes all junctions
+    writeBuildings(); // writes all buildings
     objfile.close();
 }
 
