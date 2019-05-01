@@ -9,28 +9,23 @@ using namespace std;
 DrawStreet::DrawStreet() {}
 
 vector<point> DrawStreet::drawQuadCurvedLine(edge_axis street) {
+    // returns a quadratic Bezier curve used for the turning radiuses
     point dot;
     float t = 0;
-
     vector<point> dots;
 
-    //glBegin(GL_POINTS);
-    //glPointSize(1);
     while ((1 - t) > -std::numeric_limits<double>::epsilon()) {
         dot.x = pow(1-t, 2)*street.start.x + 2*(1-t)*t*street.control[0].x + t*t*street.end.x;
         dot.y = 0;
         dot.z = pow(1-t, 2)*street.start.z + 2*(1-t)*t*street.control[0].z + t*t*street.end.z;
         dots.push_back(dot);
-        //t += street.step_size;
         t += 0.1;
-        //glVertex3f(dot.x, dot.y, dot.z);
     }
-    //glEnd();
-
     return dots;
 }
 
 void DrawStreet::drawStraightLine(edge_axis street) {
+    // draws a straight line (used only while debbbing)
     float t = 0;
     point dot;
 
@@ -48,12 +43,14 @@ void DrawStreet::drawStraightLine(edge_axis street) {
 }
 
 edge_axis DrawStreet::computeCurvedStreet(node start, node end, vector<point> control, float width) {
+    // returns the dots of the offset curved street given start, end and control points
     float t = 0, line_length;
     point a, b, c, d, e, f, up_f, down_f;
     graphVector line_vector;
     vector<graphVector> normals;
     edge_axis street = computeStraightStreet(start, end, width);
     street.control = control;
+    // find interpolation unti the deired limit is reached
     while ((1 - t) > -std::numeric_limits<double>::epsilon()) {
         a = Lerp(toPoint(street.start), street.control[0], t);
         b = Lerp(street.control[0], street.control[1], t);
@@ -70,7 +67,7 @@ edge_axis DrawStreet::computeCurvedStreet(node start, node end, vector<point> co
         down_f = {f.x + normals[1].x*width, f.y + normals[1].y*width, f.z + normals[1].z*width};;
 
         t += 0.01;
-
+        // assigned the new lines a offset ones
         street.offset_up.dots.push_back(up_f);
         street.offset_down.dots.push_back(down_f);
     }
@@ -78,6 +75,7 @@ edge_axis DrawStreet::computeCurvedStreet(node start, node end, vector<point> co
 }
 
 void DrawStreet::drawCurvedStreet(edge_axis street, vector<point> p_start, vector<point> p_end, int i_start, int i_end) {
+    // draws a curved street using the previously stored dots
     point up_f, down_f;
 
     glBegin(GL_TRIANGLE_STRIP);
@@ -101,11 +99,13 @@ void DrawStreet::drawCurvedStreet(edge_axis street, vector<point> p_start, vecto
 
 
 point DrawStreet::Lerp(point p1, point p2, float t) {
+    // does the linear line implementation
     point move = {(1-t)*p1.x + t*p2.x, (1-t)*p1.y + t*p2.y, (1-t)*p1.z + t*p2.z};
     return move;
 }
 
 edge_axis DrawStreet::computeStraightStreet(node start, node end, float width) {
+    // offsets the lines of a straight street
     edge_axis street;
     graphVector line_vector = findVector(toPoint(start), toPoint(end));
     float line_length =  findLength(line_vector);
@@ -134,6 +134,7 @@ edge_axis DrawStreet::computeStraightStreet(node start, node end, float width) {
 }
 
 void DrawStreet::drawStraightStreet(edge_axis street, float t_start, float t_end) {
+    // draws a straight street using the previously computed offset lines
     float t = t_start;
     edge_offset offset_up = street.offset_up;
     edge_offset offset_down = street.offset_down;

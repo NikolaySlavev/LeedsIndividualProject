@@ -9,6 +9,7 @@ Buildings::Buildings(std::vector<std::vector<point>> *objects_p) {
 }
 
 void Buildings::computeBuildings() {
+    // computes a randomly height buildings using the subdivided parcels
     float height;
     vector<point> new_object;
     for (vector<point> object: *objects_p) {
@@ -22,6 +23,7 @@ void Buildings::computeBuildings() {
 }
 
 void Buildings::drawBuildings() {
+    //draws the buildings
     float height;
     point p1, p2, p3, p4;
     for (vector<point> object: building_points) {
@@ -43,6 +45,7 @@ void Buildings::drawBuildings() {
 }
 
 void Buildings::drawConcavePolygon(vector<point> dots, float height) {
+    // draws concave polygons used for the floor and roof of the buildings
     GLUtesselator *tess = gluNewTess();
     gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
     gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
@@ -66,6 +69,7 @@ void Buildings::drawConcavePolygon(vector<point> dots, float height) {
 }
 
 void Buildings::polygon(point a, point b, point c, point d) {
+  // a polygon for the walls
   glColor3f(1,0,0);
   glNormal3fv(normal(a,b,c));
   glBegin(GL_POLYGON);
@@ -84,6 +88,7 @@ void Buildings::polygon(point a, point b, point c, point d) {
 
 // needs 8 points
 void Buildings::cube(vector<point> p) {
+  // debugging
   glColor3f(1, 0.5, 0.5);
   polygon(p[3], p[2], p[1], p[0]);
   polygon(p[1], p[2], p[6], p[5]);
@@ -111,6 +116,7 @@ void Buildings::cube(vector<point> p) {
 }
 
 void Buildings::drawLine(point s, point e) {
+    // draws a line a each edge of the buildings
     glLineWidth(2);
     glBegin(GL_LINES);
         glVertex3f(s.x, s.y, s.z);
@@ -119,6 +125,7 @@ void Buildings::drawLine(point s, point e) {
 }
 
 GLfloat* Buildings::normal(point a, point b, point c) {
+  // finds the normal vector
   graphVector vX = {b.x-a.x, b.y-a.y, b.z-a.z};
   graphVector vY = {c.x-a.x, c.y-a.y, c.z-a.z};
   GLfloat n[3] = {vX.y*vY.z - vX.z*vY.y, vX.z*vY.x - vX.x*vY.z, vX.x*vY.y - vX.y*vY.x};

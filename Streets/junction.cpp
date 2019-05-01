@@ -12,6 +12,7 @@ Junction::Junction(map<int, node> *nodes, map<int, map<int, edge_axis>> *edges, 
 }
 
 void Junction::drawJunctions() {
+    // draw the ready jucntions
     DrawStreet *street = new DrawStreet();
     GLUtesselator *tess = gluNewTess();
 
@@ -55,6 +56,7 @@ void Junction::drawJunctions() {
 }
 
 void Junction::addJunctionLine(int start, int end, vector<int> target_id) {
+    // connects the different turning radiuses into a single object
     curved_edge_axis straight;
     if (isnan((*edges)[start][end].offset_down.closest_t_intersection))
         return;
@@ -83,6 +85,7 @@ void Junction::addJunctionLine(int start, int end, vector<int> target_id) {
 }
 
 void Junction::findJunctionObjects() {
+    // iterates over all nodes which will be used to model junctions
     for (auto const& node : *nodes) {
         int start = (*edges)[node.first].begin()->first;
         int end = node.first;
@@ -91,7 +94,7 @@ void Junction::findJunctionObjects() {
 }
 
 void Junction::addClosestIntersection(float closest_t, edge_offset *offset) {
-    // Dodgy CODE with the indexing!!!
+    // assigns the closest intersectino to the relevant offset lines
     point start = offset->start;
     point end = offset->end;
     if (!offset->dots.empty()) {
@@ -112,6 +115,7 @@ void Junction::addClosestIntersection(float closest_t, edge_offset *offset) {
 }
 
 void Junction::findClosestIntersections() {
+    // finds the closest intersecection for each street line
     float closest_t = NAN;
     int count = 0;
     for (auto const& new_edges : (*edges)) {
@@ -144,6 +148,7 @@ void Junction::findClosestIntersections() {
 }
 
 void Junction::addPairs() {
+    // find the pairs
     int s, m, e;
     for (vector<int> object: *objects) {
         for (int i=0; i < object.size(); i++) {
@@ -164,6 +169,7 @@ void Junction::addPairs() {
 }
 
 void Junction::addPair(int start, int mid,  int end) {
+    // adds pairs to the graph
     edge_offset edge1 = (*edges)[start][mid].offset_up;
     edge_offset edge2 = (*edges)[mid][end].offset_up;
 
@@ -192,6 +198,7 @@ void Junction::addPair(int start, int mid,  int end) {
 }
 
 vector<float> Junction::findIntersection(edge_offset e1, edge_offset e2) {
+    // finds intersecion between two edges
     vector<float> t_u;
     if (e1.dots.empty() && e2.dots.empty()) {
          t_u = algorithmIntersection(e1.start, e1.end, e2.start, e2.end);
@@ -210,6 +217,7 @@ vector<float> Junction::findIntersection(edge_offset e1, edge_offset e2) {
 }
 
 vector<float> Junction::findCurvedIntersection(vector<point> e1, vector<point> e2) {
+    // finds a curved intersection
     vector<float> best = {numeric_limits<float>::infinity(), numeric_limits<float>::infinity()};
     vector<int> best_index = {-1, -1};
     vector<float> t_u;
@@ -232,6 +240,7 @@ vector<float> Junction::findCurvedIntersection(vector<point> e1, vector<point> e
 }
 
 vector<float> Junction::algorithmIntersection(point e1_start, point e1_end, point e2_start, point e2_end) {
+    // the actual algorithm that finds the intersection
     float t = ((e1_start.x - e2_start.x) * (e2_start.z - e2_end.z) - (e1_start.z - e2_start.z) * (e2_start.x - e2_end.x)) / ((e1_start.x - e1_end.x) * (e2_start.z - e2_end.z) - (e1_start.z - e1_end.z)*(e2_start.x - e2_end.x));
     float u = -(((e1_start.x - e1_end.x) * (e1_start.z - e2_start.z) - (e1_start.z - e1_end.z) * (e1_start.x - e2_start.x)) / ((e1_start.x - e1_end.x) * (e2_start.z - e2_end.z) - (e1_start.z - e1_end.z)*(e2_start.x - e2_end.x)));
     //inf
