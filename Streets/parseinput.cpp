@@ -14,6 +14,7 @@
 //ParseInput::ParseInput(char* file_name) {
 //    myfile.open ("example.csv");
 //    this->file_name = "map.osm";
+//    this->file_name = file_name;
 //    const void *osm_handle;
 //    int ret;
 //    struct osm_helper helper;
@@ -142,7 +143,6 @@
 //// multiply by the size (100)
 //// substract by 50
 //vector<double> ParseInput::findCoordinates(double lat, double lon) {
-
 //    int pixel_width = 100;
 //    int pixel_height = 100;
 //    double map_lon_delta = largest_lon - smallest_lon;
@@ -184,6 +184,86 @@
 //    return 0;
 //}
 
+//bool ParseInput::checkCurved(point a, point b, point c) {
+//    vector<float> vec1 = {a.x- b.x, a.y - b.y, a.z - b.z};
+//    vector<float> vec2 = {b.x- c.x, b.y - c.y, b.z - c.z};
+
+//    point cross = {vec1[1]*vec2[2] - vec1[2]*vec2[1], vec1[2]*vec2[0] - vec1[0]*vec2[2], vec1[0]*vec2[1] - vec1[1]*vec2[0]};
+//    float length = sqrt(pow(cross.x,2)+ pow(cross.y,2) + pow(cross.z,2));
+//    cout << "LENGTH: " << length << endl;
+//    if (length == 0)
+//        return false;
+//    return true;
+//}
+
+//static vector<float> solvexy(double a, double b, double c, double d, double e, double f) {
+//    float j = (c - a / d * f) / (b - a * e / d);
+//    float i = (c - (b * j)) / a;
+//    return {i, j};
+//}
+
+//static double b0(double t) { return pow(1 - t, 3); }
+//static double b1(double t) { return t * (1 - t) * (1 - t) * 3; }
+//static double b2(double t) { return (1 - t) * t * t * 3; }
+//static double b3(double t) { return pow(t, 3); }
+
+//vector<point> ParseInput::approximateCurve(point start, point end, vector<point> control) {
+//    //if (control.size()==1)
+//    double c1 = sqrt(pow((control[0].x - start.x),2) + pow((control[0].z - start.z),2));
+//    double c2 = sqrt(pow((control[1].x - control[0].x),2) + pow((control[1].z - control[0].z),2));
+//    double c3 = sqrt(pow((end.x - control[1].x),2) + pow((end.z - control[1].z),2));
+
+//    double t1 = c1 / (c1 + c2 + c3);
+//    double t2 = (c1 + c2) / (c1 + c2 + c3);
+
+//    vector<float> out1 = solvexy(b1(t1), b2(t1), control[0].x - (start.x * b0(t1)) - (end.x * b3(t1)), b1(t2), b2(t2), control[1].x - (start.x * b0(t2)) - (end.x * b3(t2)));
+//    vector<float> out2 = solvexy(b1(t1), b2(t1), control[0].z - (start.z * b0(t1)) - (end.z * b3(t1)), b1(t2), b2(t2), control[1].z - (start.z * b0(t2)) - (end.z * b3(t2)));
+
+//    point con1 = {out1[0], 0, out2[0]};
+//    point con2 = {out1[1], 0, out2[1]};
+//    return {con1, con2};
+//}
+
+//vector<point> ParseInput::findCurve(vector<long long> dots) {
+//    if (dots.size() < 4)
+//        return {};
+
+//    bool curved = false;
+//    for (int i=0; i<dots.size()-2; i+=3) {
+//        if (i+3 >= dots.size())
+//            break;
+//        if (!checkCurved(nodes[dots[i]].pixel, nodes[dots[i+1]].pixel, nodes[dots[i+2]].pixel)) {
+//            curved = true;
+//            break;
+//        }
+//    }
+//    if (!curved)
+//        return {};
+
+//    vector<point> support;
+//    vector<point> support_dots = {};
+//    // dots are ids
+//    support_dots.push_back(nodes[dots[0]].pixel);
+//    for (int i=0; i<dots.size()-2; i+=3) {
+//        if (i == dots.size()-3) {
+//            int num = dots.size() - i;
+//            if (num == 1)
+//                support = {nodes[dots[i]].pixel, nodes[dots[i]].pixel};
+//            else if(num == 2)
+//                support = {nodes[dots[i+1]].pixel, nodes[dots[i+1]].pixel};
+//                //support = approximateCurve(nodes[dots[i]].pixel, nodes[dots[i+2]].pixel, {nodes[dots[i+1]].pixel});
+//            else
+//                support = approximateCurve(nodes[dots[i]].pixel, nodes[dots[i+3]].pixel, {nodes[dots[i+1]].pixel, nodes[dots[i+2]].pixel});
+//        } else
+//            support = approximateCurve(nodes[dots[i]].pixel, nodes[dots[i+3]].pixel, {nodes[dots[i+1]].pixel, nodes[dots[i+2]].pixel});
+//        support_dots.push_back(support[0]);
+//        support_dots.push_back(support[1]);
+//    }
+//    support_dots.push_back(nodes[dots[dots.size()-1]].pixel);
+//    return support_dots;
+//}
+
+
 //void ParseInput::populateFile() {
 //    vector<double> coord;
 //    custom_node  n;
@@ -194,13 +274,18 @@
 //        if (id_link.find(n.id) != id_link.end()) {
 //            id_link[n.id] = id++;
 //            coord = findCoordinates(n.lat, n.lon);
+//            nodes[way.second.dots[0]].pixel = {(float) coord[0], (float) coord[1], (float) coord[2]};
 //            myfile << to_string(id_link[n.id]);
 //            myfile << "," + to_string(coord[0]) + "," + to_string(coord[1]) + "," + to_string(coord[2]) + "\n";
 //        }
 //    }
 //    myfile << "\n";
+//    vector<point> control;
 //    for (auto way: ways) {
 //        myfile << to_string(id_link[way.second.dots[0]]) + "," + to_string(id_link[way.second.dots[way.second.dots.size()-1]]) + "\n";
+//        control = findCurve(way.second.dots);
+//        cout << "SIZE: " << control.size() << endl;
+//        //cout << "CONTROL: " << control[0] << " " << control[1] << endl;
 //    }
 //}
 

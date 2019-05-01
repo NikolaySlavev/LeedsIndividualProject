@@ -5,11 +5,17 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <map>
 #include "readosm.h"
 #include <fstream>
 #include <iostream>
-#include <map>
 
+
+struct point {
+    float x;
+    float y;
+    float z;
+};
 
 struct osm_helper {
     int read_count;
@@ -20,6 +26,7 @@ struct custom_node {
     long long id;
     double lat;
     double lon;
+    point pixel;
 };
 
 struct custom_way {
@@ -49,7 +56,9 @@ private:
     static double smallest_lon;
     static std::map<int, int> nodes_count;
     static std::map<int, std::vector<int>> nodes_links;
-
+    static std::vector<point> approximateCurve(point start, point end, std::vector<point> control);
+    static bool checkCurved(point a, point b, point c);
+    static std::vector<point> findCurve(std::vector<long long> dots);
 };
 
 

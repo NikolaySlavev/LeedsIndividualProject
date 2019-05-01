@@ -5,7 +5,6 @@
 #include <QImage>
 #include <GL/glu.h>
 
-
 class Image {
  public:
   Image(const std::string& fn);
