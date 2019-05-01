@@ -3,38 +3,15 @@
 
 using namespace std;
 
-Buildings::Buildings(Layout *layout) {
-    this->layout = layout;
-}
+Buildings::Buildings(std::vector<std::vector<point>> *objects_p) {
+    this->objects_p = objects_p;
 
-//void Buildings::computeBuildings() {
-//    vector<int> object;
-//    vector<point> points;
-//    int end;
-//    point dot;
-//    for (int i=0; i < layout->objects.size(); i++) {
-//        object = layout->objects[i];
-//        for (int j=0; j < object.size(); j++) {
-//            end = j+1;
-//            if (j == object.size() - 1)
-//                end = 0;
-//            dot = layout->edges[object[j]][object[end]].offset_up.pair_p_intersection;
-//            points.push_back(dot);
-//        }
-//        float height = (rand() % 20) + 10;
-//        for (int j=0; j < object.size(); j++){
-//            point new_p = {points[j].x, points[j].y+height, points[j].z};
-//            points.push_back(new_p);
-//        }
-//        building_points.push_back(points);
-//        points = {};
-//    }
-//}
+}
 
 void Buildings::computeBuildings() {
     float height;
     vector<point> new_object;
-    for (vector<point> object: layout->objects_p) {
+    for (vector<point> object: *objects_p) {
         new_object = {};
         height = (rand() % 30) + 10;
         for (int i=0; i<object.size(); i++) {
@@ -83,15 +60,7 @@ void Buildings::drawConcavePolygon(vector<point> dots, float height) {
         quad[i][1] = height;
         quad[i][2] = (double) dots[i].z;
         gluTessVertex(tess, quad[i], quad[i]);
-//        OBJ::objfile << "v " + to_string(dots[i].x) + " " + to_string(dots[i].y) + " " + to_string(dots[i].z) + "\n";
-//        OBJ::count_obj++;
     }
-//    OBJ::objfile << "f";
-//    for (int i=OBJ::stopped_count_obj; i<OBJ::count_obj; i++) {
-//        OBJ::objfile << " " + to_string(i);
-//    }
-//    OBJ::objfile << "\n";
-//    OBJ::stopped_count_obj = OBJ::count_obj;
     gluTessEndContour(tess);
     gluTessEndPolygon(tess);
 }
@@ -111,18 +80,6 @@ void Buildings::polygon(point a, point b, point c, point d) {
   drawLine(b, c);
   drawLine(c, d);
   drawLine(d, a);
-
-//  OBJ::objfile << "v " + to_string(a.x) + " " + to_string(a.y) + " " + to_string(a.z) + "\n";
-//  OBJ::objfile << "v " + to_string(b.x) + " " + to_string(b.y) + " " + to_string(b.z) + "\n";
-//  OBJ::objfile << "v " + to_string(c.x) + " " + to_string(c.y) + " " + to_string(c.z) + "\n";
-//  OBJ::objfile << "v " + to_string(d.x) + " " + to_string(d.y) + " " + to_string(d.z) + "\n";
-//  OBJ::count_obj+=4;
-//  OBJ::objfile << "f";
-//  for (int i=OBJ::stopped_count_obj; i<OBJ::count_obj; i++) {
-//      OBJ::objfile << " " + to_string(i);
-//  }
-//  OBJ::objfile << "\n";
-//  OBJ::stopped_count_obj = OBJ::count_obj;
 }
 
 // needs 8 points

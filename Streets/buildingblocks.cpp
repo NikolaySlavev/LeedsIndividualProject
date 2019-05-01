@@ -3,22 +3,52 @@
 
 using namespace std;
 
-BuildingBlocks::BuildingBlocks(Layout *layout, DrawStreet *street, Junction *junction) {
-    this->layout = layout;
-    this->street = street;
-    this->junction = junction;
+BuildingBlocks::BuildingBlocks(map<int, node> *nodes, map<int, map<int, edge_axis>> *edges, vector<vector<int>> *objects, vector<vector<point>> *objects_p) {
+    this->nodes = nodes;
+    this->edges = edges;
+    this->objects = objects;
+    this->objects_p = objects_p;
 }
 
 void BuildingBlocks::removeLargest() {
     int largest = 0;
     int index = 0;
-    for (int i = 0; i < layout->objects.size(); i++) {
-        if (layout->objects[i].size() > largest) {
-            largest = layout->objects[i].size();
+    for (int i = 0; i < objects->size(); i++) {
+        if ((*objects)[i].size() > largest) {
+            largest = (*objects)[i].size();
             index = i;
         }
     }
-    layout->objects.erase(layout->objects.begin() + index);
+
+    objects->erase(objects->begin() + index);
+    // at least three unique
+    int count = 0;
+    int node_count = 0;
+    vector<int> obj;
+    for (int i=0; i<objects->size(); i++) {
+        obj = (*objects)[i];
+        sort(obj.begin(), obj.end());
+        for (int j=0; j<obj.size()-1; j++) {
+
+            if (j+1 == obj.size()-1) {
+                if (obj[j] != obj[j+1])
+                    node_count++;
+            }
+
+            if (obj[j] == obj[j+1])
+                count++;
+            if (obj[j] != obj[j+1]) {
+                if (count == 0)
+                    node_count++;
+                count = 0;
+            }
+        }
+        if (node_count < 3) {
+            objects->erase(objects->begin() + i);
+            i--;
+        }
+        node_count = 0;
+    }
 }
 
 void BuildingBlocks::computeDrawableBlocks() {
@@ -27,7 +57,7 @@ void BuildingBlocks::computeDrawableBlocks() {
     vector<point> edge_nodes;
     vector<vector<point>> all_dots;
     int s, m, e;
-    for (vector<int> object : layout->objects) {
+    for (vector<int> object : *objects) {
         for (int i=0; i < object.size(); i++) {
             if (i == object.size() - 1) {
                 s = object[i];
@@ -36,32 +66,53 @@ void BuildingBlocks::computeDrawableBlocks() {
                 s = object[i];
                 e = object[i+1];
             }
-            point start = layout->edges[s][e].offset_up.closest_p_intersection;
-            if (isnan(layout->edges[s][e].offset_up.closest_t_intersection))
-                start = layout->edges[s][e].offset_up.end;
-            point control = layout->edges[s][e].offset_up.pair_p_intersection;
-            vector<int> p = layout->edges[s][e].offset_up.pair_id;
-            point end = layout->edges[p[1]][p[0]].offset_down.closest_p_intersection;
-            if (isnan(layout->edges[p[1]][p[0]].offset_down.closest_t_intersection))
-                end = layout->edges[p[1]][p[0]].offset_down.end;
+            point start = (*edges)[s][e].offset_up.closest_p_intersection;
+            if (isnan((*edges)[s][e].offset_up.closest_t_intersection))
+                start = (*edges)[s][e].offset_up.end;
+            point control = (*edges)[s][e].offset_up.pair_p_intersection;
+            vector<int> p = (*edges)[s][e].offset_up.pair_id;
+            point end = (*edges)[p[1]][p[0]].offset_down.closest_p_intersection;
+            if (isnan((*edges)[p[1]][p[0]].offset_down.closest_t_intersection))
+                end = (*edges)[p[1]][p[0]].offset_down.end;
 
-            edge_nodes = layout->edges[s][e].offset_up.dots;
+            edge_nodes = (*edges)[s][e].offset_up.dots;
 
             if (!edge_nodes.empty()) {
-                int end_dot = layout->edges[s][e].offset_up.closest_i_intersection;
-                int start_dot = (edge_nodes.size()-2) - layout->edges[e][s].offset_down.closest_i_intersection;
-                dots.insert( dots.end(), edge_nodes.begin()+start_dot+1, edge_nodes.begin()+end_dot+1);
+                int end_dot = (*edges)[s][e].offset_up.closest_i_intersection;
+                if (isnan((*edges)[s][e].offset_up.closest_t_intersection))
+                    end_dot = edge_nodes.size()-1;
+                int start_dot = (edge_nodes.size()-2) - (*edges)[e][s].offset_down.closest_i_intersection;
+                if (isnan((*edges)[e][s].offset_down.closest_t_intersection))
+                    start_dot = 0;
+                if (start_dot < end_dot) {
+                    dots.insert( dots.end(), edge_nodes.begin()+start_dot+1, edge_nodes.begin()+end_dot+1);
+                }
             }
 
-            if (isnan(control.x))
+            if (isnan(control.x)) {
                 output = {start, end};
-            else {
+            } else {
                 curved_edge_axis line = {toNode(start), {control}, toNode(end)};
                 output = street->drawQuadCurvedLine(toEdgeAxis(line));
             }
             dots.insert( dots.end(), output.begin(), output.end() );
         }
-        layout->objects_p.push_back(dots);
+
+        bool correct_order = true;
+        point p, q, r, temp;
+        int val;
+        for (int i=0; i<dots.size()-2; i++) {
+           if (isnan(dots[i].x) || isnan(dots[i].z)) {
+               correct_order = false;
+           }
+           p = dots[i];
+           q = dots[i+1];
+           r = dots[i+2];
+           val = (q.z - p.z) * (r.x - q.x) - (q.x - p.x) * (r.z - q.z);
+        }
+
+        if (correct_order)
+            objects_p->push_back(dots);
         dots = {};
     }
 }
@@ -73,29 +124,20 @@ void BuildingBlocks::drawBlocks() {
     gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
     gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
 
-    cout << "SIZEEE:: " << layout->objects_p.size() << endl;
-    for (vector<point> dots: layout->objects_p) {
-
-//        for (int i=0; i<dots.size(); i++) {
-//            glPointSize(4);
-//            glBegin(GL_POINTS);
-//                 glVertex3f(dots[i].x, 3, dots[i].z);
-//            glEnd();
-//        }
-
+    for (vector<point> dots: *objects_p) {
         int vec_size = dots.size();
         GLdouble (*quad)[3] = new GLdouble[vec_size][3];
         float red = (rand() % 100 + 50) / 256.0;
         float green = (rand() % 100 + 50) / 256.0;
         float blue = (rand() % 100 + 50) / 256.0;
         glColor3f(red,green,blue);
-        glColor3f(1,0,0);
-        //glNormal3f(0,1,0);
+        //glColor3f(1,0,0);
+
         gluTessBeginPolygon(tess, nullptr);
              gluTessBeginContour(tess);
                 for (int i=0; i<dots.size(); i++) {
                     quad[i][0] = (double) dots[i].x;
-                    quad[i][1] = 0.5;
+                    quad[i][1] = 0;
                     quad[i][2] = (double) dots[i].z;
                     gluTessVertex(tess, quad[i], quad[i]);
                  }
@@ -122,27 +164,27 @@ void BuildingBlocks::findBlocks() {
 
     bool set_first = false;
     int search_from;
-    for (int i = 0; i < layout->edges.size(); i++) {
-        for (auto const& edge : layout->edges[i]) {
+    for (int i = 0; i < (*edges).size(); i++) {
+        for (auto const& edge : (*edges)[i]) {
             visited_edges[edge.second.start.id][edge.second.end.id] = false;
         }
     }
 
     float smallest_x = numeric_limits<float>::infinity(), smallest_z = numeric_limits<float>::infinity();
     int smallest_id = 0;
-    for (int i=0; i < layout->nodes.size(); i++) {
-        if (layout->nodes[i].x < smallest_x) {
-            smallest_x = layout->nodes[i].x;
-            if (layout->nodes[i].z < smallest_z) {
-                smallest_z = layout->nodes[i].z;
-                smallest_id = layout->nodes[i].id;
+    for (int i=0; i < (*nodes).size(); i++) {
+        if ((*nodes)[i].x < smallest_x) {
+            smallest_x = (*nodes)[i].x;
+            if ((*nodes)[i].z < smallest_z) {
+                smallest_z = (*nodes)[i].z;
+                smallest_id = (*nodes)[i].id;
             }
         }
     }
     graphVector vec, adj_vec;
     float angle, smallest_angle = 361;
-    for (auto const& edge : layout->edges[smallest_id]) {
-        adj_vec = street->findVector(toPoint(layout->edges[smallest_id][edge.first].end), toPoint(layout->edges[smallest_id][edge.first].start));
+    for (auto const& edge : (*edges)[smallest_id]) {
+        adj_vec = street->findVector(toPoint((*edges)[smallest_id][edge.first].end), toPoint((*edges)[smallest_id][edge.first].start));
         angle = findAngle(vec, adj_vec);
         if (angle < smallest_angle) {
             smallest_angle = angle;
@@ -156,15 +198,18 @@ void BuildingBlocks::findBlocks() {
 }
 
 void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vector<int> found) {
+    if (stack_count >= 1200) {
+        return;
+    }
     int check;
     graphVector vec, adj_vec;
     float angle, smallest_angle;
     int smallest = -1;
-    vec = street->findVector(toPoint(layout->nodes[v]), toPoint(layout->nodes[stack[stack.size()-1]]));
+    vec = street->findVector(toPoint((*nodes)[v]), toPoint((*nodes)[stack[stack.size()-1]]));
     smallest_angle = 361;
-    for (auto const& edge : layout->edges[v]) {
+    for (auto const& edge : (*edges)[v]) {
         if (!visited_edges[v][edge.first]) {
-            adj_vec = street->findVector(toPoint(layout->edges[v][edge.first].end), toPoint(layout->edges[v][edge.first].start));
+            adj_vec = street->findVector(toPoint((*edges)[v][edge.first].end), toPoint((*edges)[v][edge.first].start));
             angle = findAngle(vec, adj_vec);
             if (angle < smallest_angle) {
                 smallest_angle = angle;
@@ -172,8 +217,9 @@ void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vecto
             }
         }
     }
+
     if (smallest >= 0) {
-        check = layout->edges[v][smallest].end.id;
+        check = (*edges)[v][smallest].end.id;
         visited_edges[v][smallest] = true;
 
         stack.push_back(v);
@@ -185,19 +231,18 @@ void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vecto
                     break;
                 }
             }
-            for (int j=0; j < object_nodes.size(); j++)
-                cout << " OBJECT_NODES " << object_nodes[j];
-            layout->objects.push_back(object_nodes);
+            objects->push_back(object_nodes);
         }
+        stack_count++;
         search(check, visited_edges, found);
     } else {
         int previous = -1;
         if (stack.size() == 0)
             return;
         if (stack.size() == 1) {
-            for (auto const& edge : layout->edges[stack[0]]) {
+            for (auto const& edge : (*edges)[stack[0]]) {
                 if (!visited_edges[stack[0]][edge.first]) {
-                    previous = layout->edges[stack[0]][edge.first].end.id;
+                    previous = (*edges)[stack[0]][edge.first].end.id;
                 }
             }
             if (previous == -1)
@@ -207,6 +252,7 @@ void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vecto
         }
         found[1] = previous;
         stack.pop_back();
+        stack_count++;
         search(previous, visited_edges, found);
     }
 }

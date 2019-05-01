@@ -6,6 +6,7 @@
 #include <QSlider>
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QPushButton>
 #include "MainWidget.h"
 
 
@@ -21,6 +22,8 @@ class MainWindow : public QWidget {
         QSlider *moveXSlider;
         QSlider *moveZSlider;
         QLineEdit *moveNode;
+        QLineEdit *changeWidth;
+        QPushButton *writeOBJ;
 };
 
 #endif // MAINWINDOW_H

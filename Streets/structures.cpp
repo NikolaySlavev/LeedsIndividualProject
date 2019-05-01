@@ -2,12 +2,6 @@
 #include <iostream>
 using namespace std;
 
-
-
-int OBJ::count_obj = 1;
-int OBJ::stopped_count_obj = 1;
-std::fstream OBJ::objfile;
-
 point toPoint(node input) { point output = {input.x, input.y, input.z}; return output; }
 
 node toNode(point input) { node output = {0, input.x, input.y, input.z}; return output; }
@@ -38,5 +32,5 @@ void CALLBACK tessVertexCB2(const GLvoid *data) {
 void CALLBACK tessErrorCB(GLenum errorCode) {
     const GLubyte *errorStr;
     errorStr = gluErrorString(errorCode);
-    cerr << "[ERROR]: " << errorStr << endl;
+    //cerr << "[ERROR]: " << errorStr << endl;
 }

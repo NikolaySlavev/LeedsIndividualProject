@@ -7,12 +7,8 @@
 #include <iostream>
 #include <vector>
 #include "structures.h"
-#include "DrawStreet.h"
 #include "Layout.h"
-#include "buildingblocks.h"
-#include "junction.h"
-#include "buildings.h"
-#include "blocksubdivision.h"
+#include "OBJ.h"
 #include <fstream>
 
 using namespace std;
@@ -27,6 +23,8 @@ class MainWidget: public QGLWidget
         void moveXNode(int);
         void moveZNode(int);
         void changeMoveNode(QString);
+        void changeWidthSize(QString);
+        void writeOBJ();
 
     public:
         MainWidget(QWidget *parent);
@@ -69,12 +67,7 @@ class MainWidget: public QGLWidget
         vector<vector<float>> edges = {};
         int count = 0;
         vector<vector<vector<vector<float>>>> offsetLines;
-        DrawStreet* street;
-        Layout *layout = new Layout(street);
-        BuildingBlocks* blocks;
-        Junction *junction;
-        Buildings *buildings;
-        BlockSubdivision *subdivision;
+        Layout *layout;
         bool enable_buildings = true;
         float lx=0.0f,lz=-1.0f;
         float x=0.0f,z=5.0f;
@@ -82,6 +75,7 @@ class MainWidget: public QGLWidget
         int prev_Xvalue = 0;
         int prev_Zvalue = 0;
         int move_node = 0;
+        float width = 1;
 
 }; // class
 

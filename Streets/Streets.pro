@@ -23,7 +23,8 @@ SOURCES += \
     junction.cpp \
     buildings.cpp \
     blocksubdivision.cpp \
-    parseinput.cpp
+    parseinput.cpp \
+    obj.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -37,7 +38,8 @@ HEADERS += \
     junction.h \
     buildings.h \
     blocksubdivision.h \
-    parseinput.h
+    parseinput.h \
+    obj.h
 
 FORMS += \
         mainwindow.ui
