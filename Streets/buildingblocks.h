@@ -21,11 +21,9 @@ class BuildingBlocks {
         void removeLargest();
         void computeDrawableBlocks();
     private:
-        void search(int v, std::map<int, std::map<int, bool>> visited_edges, std::vector<int> found);
+        bool search(int v, std::map<int, std::map<int, bool>> visited_edges, std::vector<int> found);
         std::vector<int> stack;
-        //Layout *layout;
         DrawStreet *street = new DrawStreet();
-        //Junction *junction;
         std::vector<std::vector<bool>> visited_edges;
         std::vector<int> object_nodes = {};
         std::map<int, node> *nodes;
@@ -33,6 +31,9 @@ class BuildingBlocks {
         std::vector<std::vector<int>> *objects;
         std::vector<std::vector<point>> *objects_p;
         int stack_count = 0;
+        int left_search_from = 0;
+        std::map<int, std::map<int, bool>> left_visited = {};
+        std::vector<int> left_found = {};
 };
 
 

@@ -75,7 +75,7 @@ void MainWidget::resizeGL(int w, int h) { // resizeGL()
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    //glOrtho(-200.0, 200.0, -50.0, 200.0, -200, 200.0);
+    //glOrtho(-300.0, 300.0, -300.0, 300.0, -300, 300.0);
     glFrustum(-0.1, 0.1, -0.2, 0.2, 0.1, 500);
 
 }
@@ -199,8 +199,8 @@ void MainWidget::paintGL() {
     glPopMatrix();
 
     glPushMatrix();
-    //glColor3f(0.5,0.5,0.5);
-    glColor3f(1,1,1);
+    glColor3f(0.5,0.5,0.5);
+    //glColor3f(1,1,1);
     layout->junction->drawJunctions();
     glPopMatrix();
 
