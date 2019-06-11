@@ -23,6 +23,8 @@ void Junction::drawJunctions() {
 
     vector<point> dots;
     vector<point> output;
+
+    all_dots = {};
     for (auto const& junction : junction_objects) {
         for (curved_edge_axis line: junction.second) {
             if (line.control.empty()) {
@@ -37,22 +39,26 @@ void Junction::drawJunctions() {
         all_dots.push_back(dots);
         dots = {};
     }
-
+    GLdouble (*quad)[3] = nullptr;
+    int vec_size = 0;
     for (vector<point> dots: all_dots) {
-        int vec_size = dots.size();
-        GLdouble (*quad3)[3] = new GLdouble[vec_size][3];
+        vec_size = dots.size();
+        quad = new GLdouble[vec_size][3];
+
         //glColor3f(1,1,1);
         gluTessBeginPolygon(tess, nullptr);
              gluTessBeginContour(tess);
                 for (int i=0; i<dots.size(); i++) {
-                    quad3[i][0] = dots[i].x;
-                    quad3[i][1] = 0;//dots[i].y;
-                    quad3[i][2] = dots[i].z;
-                    gluTessVertex(tess, quad3[i], quad3[i]);
+                    quad[i][0] = dots[i].x;
+                    quad[i][1] = 0;//dots[i].y;
+                    quad[i][2] = dots[i].z;
+                    gluTessVertex(tess, quad[i], quad[i]);
                  }
              gluTessEndContour(tess);
         gluTessEndPolygon(tess);
+        free(quad);
     }
+
 }
 
 void Junction::addJunctionLine(int start, int end, vector<int> target_id) {

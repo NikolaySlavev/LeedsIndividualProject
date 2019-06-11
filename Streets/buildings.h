@@ -15,7 +15,7 @@ private:
     void cube(std::vector<point> p);
     GLfloat* normal(point a, point b, point c);
     void drawLine(point s, point e);
-    void drawConcavePolygon(std::vector<point> dots, float height);
+    void drawConcavePolygon(std::vector<point> dots, float height, GLUtesselator *tess, GLdouble (*quad)[3]);
     std::vector<std::vector<point>> *objects_p;
 };
 

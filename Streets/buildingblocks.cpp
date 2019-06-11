@@ -127,14 +127,17 @@ void BuildingBlocks::drawBlocks() {
     gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
     gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
 
+    int vec_size = 0;
+    GLdouble (*quad)[3];
+    float red, green, blue = 0;
     for (vector<point> dots: *objects_p) {
-        int vec_size = dots.size();
-        GLdouble (*quad)[3] = new GLdouble[vec_size][3];
-        float red = (rand() % 100 + 50) / 256.0;
-        float green = (rand() % 100 + 50) / 256.0;
-        float blue = (rand() % 100 + 50) / 256.0;
-        glColor3f(red,green,blue);
-        //glColor3f(1,0,0);
+        vec_size = dots.size();
+        quad = new GLdouble[vec_size][3];
+//        red = (rand() % 100 + 50) / 256.0;
+//        green = (rand() % 100 + 50) / 256.0;
+//        blue = (rand() % 100 + 50) / 256.0;
+        //glColor3f(red,green,blue);
+        glColor3f(1,0,0);
 
         gluTessBeginPolygon(tess, nullptr);
              gluTessBeginContour(tess);
@@ -146,6 +149,7 @@ void BuildingBlocks::drawBlocks() {
                  }
              gluTessEndContour(tess);
         gluTessEndPolygon(tess);
+        free(quad);
     }
 }
 
@@ -199,13 +203,28 @@ void BuildingBlocks::findBlocks() {
     visited_edges[smallest_id][search_from] = true;
     stack = {smallest_id};
     vector<int> found = {-1, smallest_id};
-    search(search_from, visited_edges, found);
+    bool ok = false;
+    ok = search(search_from, visited_edges, found);
+    cout << ok << endl;
+    if (!left_visited.empty()) {
+        stack_count = 0;
+        search(left_search_from, left_visited, left_found);
+        stack_count = 0;
+        search(left_search_from, left_visited, left_found);
+        stack_count = 0;
+        search(left_search_from, left_visited, left_found);
+    }
 }
 
-void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vector<int> found) {
+bool BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vector<int> found) {
     // the recursive algorithm that finds enclosed loops
     if (stack_count >= 1200) {
-        return;
+        cout << v << endl;
+        cout << stack_count << endl;
+        left_visited = visited_edges;
+        left_search_from = v;
+        left_found = found;
+        return false;
     }
     int check;
     graphVector vec, adj_vec;
@@ -244,7 +263,7 @@ void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vecto
     } else {
         int previous = -1;
         if (stack.size() == 0)
-            return;
+            return true;
         if (stack.size() == 1) {
             for (auto const& edge : (*edges)[stack[0]]) {
                 if (!visited_edges[stack[0]][edge.first]) {
@@ -252,7 +271,7 @@ void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vecto
                 }
             }
             if (previous == -1)
-                return;
+                return true;
         } else {
             previous = stack[stack.size()-1];
         }
@@ -261,4 +280,5 @@ void BuildingBlocks::search(int v, map<int, map<int, bool>> visited_edges, vecto
         stack_count++;
         search(previous, visited_edges, found);
     }
+    return true;
 }

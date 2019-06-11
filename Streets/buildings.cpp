@@ -26,9 +26,18 @@ void Buildings::drawBuildings() {
     //draws the buildings
     float height;
     point p1, p2, p3, p4;
+    GLUtesselator *tess = gluNewTess();
+    gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
+    gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
+    gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
+    gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
+
+    GLdouble (*quad)[3] = nullptr;
+    glNormal3f(0,1,0);
     for (vector<point> object: building_points) {
         height = object[0].y;
-        drawConcavePolygon(object, height);
+        glColor3f(1,0,0);
+        drawConcavePolygon(object, height, tess, quad);
         for (int i=0; i<object.size(); i++) {
             p1 = object[i];
             if (i+1 == object.size())
@@ -44,28 +53,21 @@ void Buildings::drawBuildings() {
     }
 }
 
-void Buildings::drawConcavePolygon(vector<point> dots, float height) {
+void Buildings::drawConcavePolygon(vector<point> dots, float height, GLUtesselator *tess, GLdouble (*quad)[3]) {
     // draws concave polygons used for the floor and roof of the buildings
-    GLUtesselator *tess = gluNewTess();
-    gluTessCallback(tess, GLU_TESS_BEGIN, (void (CALLBACK *)())tessBeginCB);
-    gluTessCallback(tess, GLU_TESS_END, (void (CALLBACK *)())tessEndCB);
-    gluTessCallback(tess, GLU_TESS_ERROR, (void (CALLBACK *)())tessErrorCB);
-    gluTessCallback(tess, GLU_TESS_VERTEX, (void (CALLBACK *)())tessVertexCB);
-
     int vec_size = dots.size();
-    GLdouble (*quad)[3] = new GLdouble[vec_size][3];
-    glColor3f(1,0,0);
-    glNormal3f(0,1,0);
+    quad = new GLdouble[vec_size][3];
     gluTessBeginPolygon(tess, nullptr);
     gluTessBeginContour(tess);
-    for (int i=0; i<dots.size(); i++) {
-        quad[i][0] = (double) dots[i].x;
-        quad[i][1] = height;
-        quad[i][2] = (double) dots[i].z;
-        gluTessVertex(tess, quad[i], quad[i]);
-    }
+        for (int i=0; i<dots.size(); i++) {
+            quad[i][0] = (double) dots[i].x;
+            quad[i][1] = height;
+            quad[i][2] = (double) dots[i].z;
+            gluTessVertex(tess, quad[i], quad[i]);
+        }
     gluTessEndContour(tess);
     gluTessEndPolygon(tess);
+    free(quad);
 }
 
 void Buildings::polygon(point a, point b, point c, point d) {

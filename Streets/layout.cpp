@@ -113,7 +113,7 @@ void Layout::inputLayout(vector<vector<node>> nodePairs) {
 
 void Layout::fileLayout(string filename) {
     // opens a file to be used to model the street layout
-    ifstream myfile("D:/Uni/Individual Project/SourceCode/LeedsIndividualProject/example.csv");
+    ifstream myfile("D:/Uni/Individual Project/SourceCode/LeedsIndividualProject/example_kocherinovo.csv");
     if (!myfile.is_open()) {
         cerr << "FILE CANNOT BE OPENED" << endl;
         return;
