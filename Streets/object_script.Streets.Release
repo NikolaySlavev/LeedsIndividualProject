@@ -1,0 +1,17 @@
+INPUT(
+./release\main.o
+./release\mainwindow.o
+./release\mainwidget.o
+./release\Image.o
+./release\database.o
+./release\structures.o
+./release\drawstreet.o
+./release\layout.o
+./release\buildingblocks.o
+./release\junction.o
+./release\buildings.o
+./release\blocksubdivision.o
+./release\parseinput.o
+./release\obj.o
+./release\moc_mainwidget.o
+);
