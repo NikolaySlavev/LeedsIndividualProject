@@ -73,7 +73,7 @@ void Buildings::drawConcavePolygon(vector<point> dots, float height, GLUtesselat
 void Buildings::polygon(point a, point b, point c, point d) {
   // a polygon for the walls
   glColor3f(1,0,0);
-  glNormal3fv(normal(a,b,c));
+  //glNormal3fv(normal(a,b,c));
   glBegin(GL_POLYGON);
     glVertex3f( a.x, a.y, a.z);
     glVertex3f( b.x, b.y, b.z);

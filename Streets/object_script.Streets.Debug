@@ -1,0 +1,17 @@
+INPUT(
+./debug\main.o
+./debug\mainwindow.o
+./debug\mainwidget.o
+./debug\Image.o
+./debug\database.o
+./debug\structures.o
+./debug\drawstreet.o
+./debug\layout.o
+./debug\buildingblocks.o
+./debug\junction.o
+./debug\buildings.o
+./debug\blocksubdivision.o
+./debug\parseinput.o
+./debug\obj.o
+./debug\moc_mainwidget.o
+);
